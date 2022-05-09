@@ -1,4 +1,3 @@
-from collections import Counter
 from hashlib import md5
 
 
@@ -12,7 +11,9 @@ def md5_hash(key):
 class ConsistentHashing:
     def __init__(self, hash_fn=md5_hash):
         self.hash_fn = hash_fn
-        self._distribution = Counter()
+        self.reset()
+
+    def reset(self):
         self._ring = {}
         self._keys = []
         self._nodes = {}
@@ -20,14 +21,9 @@ class ConsistentHashing:
     def hash_key(self, key):
         return self.hash_fn(key)
 
-    def setup(self):
-        """
-        Setup the hash ring with the given nodes and virtual nodes.
-        """
-        for node_name, node_meta in self._nodes.items():
-            n_vnodes = node_meta["vnodes"] * node_meta["weight"]
-            self._distribution[node_name] = n_vnodes
-            for vnode_idx in range(n_vnodes):
-                vnode_key = self.hash_key(f"{node_name}-{vnode_idx}")
-                self._ring[vnode_key] = node_name
+    def add_node(self, node_name, node_meta):
+        for idx in range(node_meta["vnodes"]):
+            vnode_key = self.hash_key(f"{node_name}-{idx}")
+            self._ring[vnode_key] = node_name
+        self._nodes[node_name] = node_meta
         self._keys = sorted(self._ring.keys())

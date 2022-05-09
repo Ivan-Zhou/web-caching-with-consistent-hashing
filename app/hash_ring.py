@@ -23,10 +23,6 @@ class HashRing:
         self.vnodes = vnodes
         self.cons_hash = ConsistentHashing()
         self._configure_nodes(nodes)
-        self.cons_hash.setup()
-
-    def get(self, key):
-        return self._get(key, "dict")
 
     def _get(self, key, item):
         """
@@ -72,15 +68,7 @@ class HashRing:
         """
         assert isinstance(nodes, list), "nodes must be a list!"
         for node in nodes:
-            meta = {
-                "hostname": node,
-                "instance": None,
-                "nodename": node,
-                "port": None,
-                "vnodes": self.vnodes,
-                "weight": 1,
-            }
-            self.cons_hash._nodes[node] = meta
+            self._add_node(node)
 
     def _get_pos(self, key):
         """
@@ -96,5 +84,22 @@ class HashRing:
             return 0
         return pos
 
+    def get(self, key):
+        return self._get(key, "dict")
+
     def get_node(self, key):
         return self._get(key, "nodename")
+
+    def _add_node(self, name):
+        meta = {
+            "hostname": name,
+            "instance": None,
+            "nodename": name,
+            "port": None,
+            "vnodes": self.vnodes,
+        }
+        self.cons_hash.add_node(name, meta)
+
+    def add_node(self, nodename):
+        self._add_node(nodename)
+        self.nodes.append(nodename)
