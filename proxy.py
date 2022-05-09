@@ -1,45 +1,53 @@
 import socket
 import sys
 import signal
-import _thread
+import thread
 
 MAX_CONN = 1
 RECV_SIZE = 4096
 
 class Proxy:
-	def __init__(self, config):
-		# Shutdown on Ctrl+C
-	    signal.signal(signal.SIGINT, self.shutdown) 
+	def __init__(self):
+	    try: 
 
-	    # Create a TCP socket
-	    self.proxySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	        # Create a TCP socket
+	        self.proxySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-	    # Re-use the socket
-	    self.proxySocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	        # Re-use the socket
+	        self.proxySocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-	    # bind the socket to a public host, and a port   
-	    self.proxySocket.bind(('myth56.stanford.edu', 30657))
+	        # bind the socket to a public host, and a port   
+	        self.proxySocket.bind(('myth56.stanford.edu', 30657))
 	    
-	    self.proxySocket.listen(MAX_CONN) # become a proxy socket
-	    # self.__clients = {}
+	        self.proxySocket.listen(MAX_CONN) # become a proxy socket
+            except Exception as e:
+                print("Some error occured on init")
+                print(e)
+                self.proxySocket.close()
+                return
+
 
 	def request_handler(self, clientSocket, clientAddr, clientData):
 
 		# parse the get request
 		requestInfo = self.parse_request_info(clientAddr, clientData)
 
+                print("sending request to origin server")
 		# create server socket (socket to talk to origin server)
 		serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		serverSocket.connect((requestInfo["server_url"], requestInfo["server_port"]))
 		serverSocket.send(requestInfo["client_data"])
 
+                print("receiving reply from origin server")
 		# get reply for server socket (origin server)
 		reply = serverSocket.recv(RECV_SIZE)
+                print("sending reply to client server")
 		while len(reply):
 			clientSocket.send(reply)
 			reply = serverSocket.recv(RECV_SIZE)
 		clientSocket.send(str.encode("\r\n\r\n"))
 
+                print("finished sending reply to client")
 		serverSocket.close()
 		clientSocket.close()
 		return
@@ -89,7 +97,7 @@ class Proxy:
 				"server_url" : server_url,
 				"total_url" : url,
 				"client_data" : str.encode(client_data),
-				"protocol" : protocol,
+                            	"protocol" : protocol,
 				"method" : first_line_tokens[0],
 			}
 
@@ -100,10 +108,17 @@ class Proxy:
 
 		
 	def service_requests(self):
-		while True:
+                while True:
+                    try:
 			clientSocket, clientAddr = self.proxySocket.accept() 
 			clientData = clientSocket.recv(RECV_SIZE)
-			_thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, 'utf-8')))
+                        print("recieved a request from ", clientAddr)
+			thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, encoding='utf-8')))
+                    except KeyboardInterrupt:
+                        clientSocket.close()
+                        self.proxySocket.close()
+                        break
+
 
 proxy = Proxy()
 proxy.service_requests()
