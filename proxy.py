@@ -1,7 +1,7 @@
 import socket
 import sys
 import signal
-import thread
+import _thread
 
 MAX_CONN = 1
 RECV_SIZE = 4096
@@ -44,9 +44,10 @@ class Proxy:
         print("sending reply to client server")
         while len(reply):
             clientSocket.send(reply)
-        reply = serverSocket.recv(RECV_SIZE)
+            reply = serverSocket.recv(RECV_SIZE)
         clientSocket.send(str.encode("\r\n\r\n"))
         print("finished sending reply to client")
+        
         serverSocket.close()
         clientSocket.close()
 
@@ -110,7 +111,7 @@ class Proxy:
                 clientSocket, clientAddr = self.proxySocket.accept() 
                 clientData = clientSocket.recv(RECV_SIZE)
                 print("recieved a request from ", clientAddr)
-                thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, encoding='utf-8')))
+                _thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, encoding='utf-8', errors='ignore')))
             except KeyboardInterrupt:
                     clientSocket.close()
                     self.proxySocket.close()
