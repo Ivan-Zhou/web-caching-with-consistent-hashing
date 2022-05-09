@@ -25,13 +25,19 @@ def get_nodes_of_urls(hash_ring):
 def main():
     # create a consistent hash ring of 3 nodes of weight 1
     hash_ring = HashRing(nodes=["node1", "node2", "node3"])
-    print(f"\nNodes in the ring: {hash_ring.nodes}")
+    print(f"\nNodes in the ring: {hash_ring.get_nodes()}")
     get_nodes_of_urls(hash_ring)
 
     # add three node
     for node in ["node4", "node5", "node6"]:
         hash_ring.add_node(node)
-    print(f"\nNodes in the ring: {hash_ring.nodes}")
+    print(f"\nNodes in the ring: {hash_ring.get_nodes()}")
+    get_nodes_of_urls(hash_ring)
+
+    # remove two nodes
+    for node in ["node4", "node5"]:
+        hash_ring.remove_node(node)
+    print(f"\nNodes in the ring: {hash_ring.get_nodes()}")
     get_nodes_of_urls(hash_ring)
 
 

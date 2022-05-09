@@ -19,7 +19,6 @@ class HashRing:
         weight_fn : _type_, optional
             a callable function to calculate the node's weight, by default None
         """
-        self.nodes = nodes
         self.vnodes = vnodes
         self.cons_hash = ConsistentHashing()
         self._configure_nodes(nodes)
@@ -102,4 +101,9 @@ class HashRing:
 
     def add_node(self, nodename):
         self._add_node(nodename)
-        self.nodes.append(nodename)
+
+    def remove_node(self, nodename):
+        self.cons_hash.remove_node(nodename)
+
+    def get_nodes(self):
+        return self.cons_hash._nodes.keys()

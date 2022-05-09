@@ -27,3 +27,16 @@ class ConsistentHashing:
             self._ring[vnode_key] = node_name
         self._nodes[node_name] = node_meta
         self._keys = sorted(self._ring.keys())
+
+    def remove_node(self, node_name):
+        try:
+            node_meta = self._nodes.pop(node_name)
+        except Exception:
+            raise KeyError(
+                f"node '{node_name}' not found, available nodes: {self._nodes.keys()}"
+            )
+        else:
+            for idx in range(node_meta["vnodes"]):
+                vnode_key = self.hash_key(f"{node_name}-{idx}")
+                del self._ring[vnode_key]
+            self._keys = sorted(self._ring.keys())
