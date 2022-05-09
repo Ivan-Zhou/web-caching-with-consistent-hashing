@@ -17,6 +17,7 @@ class ConsistentHashing:
         self._distribution = Counter()
         self._ring = {}
         self._keys = []
+        self._nodes = {}
 
     def hash_key(self, key):
         return self.hash_fn(key)
