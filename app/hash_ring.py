@@ -1,4 +1,7 @@
+from bisect import bisect
+
 from .consistent_hashing import ConsistentHashing
+
 
 class HashRing:
     def __init__(self, nodes=[], hash_fn=None, vnodes=100, weight_fn=None):
@@ -19,14 +22,11 @@ class HashRing:
         self.nodes = nodes
         self.vnodes = vnodes
         self.cons_hash = ConsistentHashing()
-        self.cons_hash.setup(nodes)
-
+        self._configure_nodes(nodes)
+        self.cons_hash.setup()
 
     def get(self, key):
-        pass
-
-    def __getitem__(self, key):
-        return self._get(key, "instance")
+        return self._get(key, "dict")
 
     def _get(self, key, item):
         """
@@ -36,12 +36,30 @@ class HashRing:
         Parameters
         ----------
         key : _type_
-            _description_
-        item : _type_
-            _description_
+            the key to get the item for
+        item : str
+            the item to get
         """
-        pos = self._get_pos(key)
+        assigned_pos = self._get_pos(key)
+        if item == "pos":
+            return assigned_pos
 
+        assigned_key = self.cons_hash._keys[assigned_pos]
+        nodename = self.cons_hash._ring[assigned_key]
+
+        if item == "dict":
+            return self.cons_hash._nodes[nodename]
+
+        if item == "nodename":
+            return nodename
+
+        if item == "tuple":
+            return (assigned_pos, nodename)
+
+        node = self.cons_hash._nodes[nodename]
+        if item.isin(node.keys()):
+            return node[item]
+        raise KeyError(f"{item} is not supported in _get()!")
 
     def _configure_nodes(self, nodes):
         """
@@ -59,9 +77,24 @@ class HashRing:
                 "instance": None,
                 "nodename": node,
                 "port": None,
-                "vnode": self.vnodes,
+                "vnodes": self.vnodes,
                 "weight": 1,
             }
-            self.runtime._nodes[node] = meta
+            self.cons_hash._nodes[node] = meta
 
+    def _get_pos(self, key):
+        """
+        Locate the node index assigned for the given key.
+        The position should be the nearest node to the right side
+        of the hash of the given key.
+        """
+        key_hash = self.cons_hash.hash_key(key)
+        # returns an insertion point which comes after (to the right of) any
+        # existing entries of key_hash in existing keys.
+        pos = bisect(self.cons_hash._keys, key_hash)
+        if pos == len(self.cons_hash._keys):
+            return 0
+        return pos
 
+    def get_node(self, key):
+        return self._get(key, "nodename")
