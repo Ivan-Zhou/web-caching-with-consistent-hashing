@@ -1,11 +1,15 @@
 import requests
+from utils import get_master_address
 
-proxies = {
-	'http': 'http://myth56.stanford.edu:30657'
-}
 
-url = 'http://example.com'
+def get_request(url):
+	master_address = get_master_address()
+	proxies = {
+		'http': f'{master_address["host"]}:{master_address["port"]}',
+	}
+	return requests.get(url, proxies=proxies)
 
-response = requests.get(url, proxies=proxies)
 
-print(response)
+if __name__ == '__main__':
+	response = get_request('http://example.com')
+	print(response)

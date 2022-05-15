@@ -1,0 +1,6 @@
+{
+    "master": {
+        "host": "http://myth54.stanford.edu",
+        "port": 30657
+    }
+}

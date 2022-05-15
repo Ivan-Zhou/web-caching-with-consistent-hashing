@@ -3,12 +3,14 @@ import sys
 import signal
 import _thread
 
+from utils import get_master_address
+
 MAX_CONN = 1
 RECV_SIZE = 4096
 
 class Proxy:
     def __init__(self):
-        try: 
+        try:
 
             # Create a TCP socket
             self.proxySocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,8 +18,9 @@ class Proxy:
             # Re-use the socket
             self.proxySocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-            # bind the socket to a public host, and a port   
-            self.proxySocket.bind(('myth56.stanford.edu', 30657))
+            # bind the socket to a public host, and a port
+            master_address = get_master_address()
+            self.proxySocket.bind((master_address["host"], master_address["port"]))
 
             self.proxySocket.listen(MAX_CONN) # become a proxy socket
         except Exception as e:
@@ -38,7 +41,7 @@ class Proxy:
         serverSocket.connect((requestInfo["server_url"], requestInfo["server_port"]))
         serverSocket.send(requestInfo["client_data"])
         print("receiving reply from origin server")
-        
+
         # get reply for server socket (origin server)
         reply = serverSocket.recv(RECV_SIZE)
         print("sending reply to client server")
@@ -47,7 +50,7 @@ class Proxy:
             reply = serverSocket.recv(RECV_SIZE)
         clientSocket.send(str.encode("\r\n\r\n"))
         print("finished sending reply to client")
-        
+
         serverSocket.close()
         clientSocket.close()
 
@@ -108,7 +111,7 @@ class Proxy:
     def service_requests(self):
         while True:
             try:
-                clientSocket, clientAddr = self.proxySocket.accept() 
+                clientSocket, clientAddr = self.proxySocket.accept()
                 clientData = clientSocket.recv(RECV_SIZE)
                 print("recieved a request from ", clientAddr)
                 _thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, encoding='utf-8', errors='ignore')))
