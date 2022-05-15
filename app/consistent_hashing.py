@@ -40,3 +40,14 @@ class ConsistentHashing:
                 vnode_key = self.hash_key(f"{node_name}-{idx}")
                 del self._ring[vnode_key]
             self._keys = sorted(self._ring.keys())
+
+    def get_node_meta(self, node_name):
+        if node_name not in self._nodes:
+            return None
+        return self._nodes[node_name]
+
+    def flush(self, time_stamp):
+        for key in self._nodes:
+            node_meta = self._nodes[key]["lastHeartbeat"]
+            if node_meta < time_stamp:
+                self.remove_node(node_meta["nodename"])
