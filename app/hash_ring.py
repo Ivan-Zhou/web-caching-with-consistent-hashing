@@ -41,6 +41,9 @@ class HashRing:
         node_meta = self.cons_hash.get_node_meta(node_name)
         if node_meta is not None:
             node_meta["lastHeartbeat"] = time.time()
+        else:
+            # Add new node to consistent caching
+            self.add_node(node_name)
 
     def flush(self):
         """
