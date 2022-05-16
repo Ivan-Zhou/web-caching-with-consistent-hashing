@@ -34,7 +34,7 @@ class Proxy:
 
         # parse the get request
         requestInfo = self.parse_request_info(clientAddr, clientData)
-        if requestInfo["server_url"] is None or requestInfo["server_url"] == "":
+        if requestInfo is None or requestInfo["server_url"] == "":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             print(requestInfo)
         else:
