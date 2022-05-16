@@ -34,10 +34,11 @@ class Proxy:
 
         # parse the get request
         requestInfo = self.parse_request_info(clientAddr, clientData)
-        if requestInfo["server_url"] == "":
-            print("Receive a heartbeat message from a Cache Server {clientAddr}")
+        if requestInfo["server_url"] is None or requestInfo["server_url"] == "":
+            print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
+            print(requestInfo)
         else:
-            print("sending request to origin server")
+            print(f"Sending request to origin server {requestInfo['server_url']}")
 
             # create server socket (socket to talk to origin server)
             serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
