@@ -15,4 +15,5 @@ def send_heartbeat():
 
 
 if __name__ == '__main__':
+    # for testing purpose
     send_heartbeat()

@@ -31,14 +31,13 @@ class Proxy:
 
 
     def request_handler(self, clientSocket, clientAddr, clientData):
-
-        # parse the get request
-        requestInfo = self.parse_request_info(clientAddr, clientData)
-        if requestInfo is None or requestInfo["server_url"] == "":
+        print(f"\nclientAddr: {clientAddr}")
+        print(f"clientData: {clientData}")
+        if clientData == "heartbeat":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
         else:
+            requestInfo = self.parse_request_info(clientAddr, clientData)
             print(f"Sending request to origin server {requestInfo['server_url']}")
-
             # create server socket (socket to talk to origin server)
             serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             serverSocket.connect((requestInfo["server_url"], requestInfo["server_port"]))
@@ -62,7 +61,6 @@ class Proxy:
     '''
     def parse_request_info(self, client_addr, client_data):
         try:
-
             lines = client_data.splitlines()
             while lines[len(lines)-1] == '':
                 lines.remove('')
@@ -108,7 +106,6 @@ class Proxy:
 
         except Exception as e:
             print(e)
-            print
             return None
 
     def service_requests(self):
