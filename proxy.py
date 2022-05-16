@@ -145,16 +145,18 @@ class Proxy:
         """
         self.hash_ring.flush()
 
-    def manage_cache_server(self):
+    def run(self):
         """
         Run scheduled tasks in thread to maintain cache servers
         """
-        t1 = threading.Thread(target=self._flush)
+        t1 = threading.Thread(target=self.service_requests)
+        t2 = threading.Timer(FLUSH_INTERVAL, self._flush)
         t1.start()
+        t2.start()
         t1.join()
+        t2.join()
 
 
 if __name__ == '__main__':
     proxy = Proxy()
-    proxy.service_requests()
-    proxy.manage_cache_server()
+    proxy.run()
