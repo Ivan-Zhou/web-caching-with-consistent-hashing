@@ -36,7 +36,6 @@ class Proxy:
         requestInfo = self.parse_request_info(clientAddr, clientData)
         if requestInfo is None or requestInfo["server_url"] == "":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
-            print(requestInfo)
         else:
             print(f"Sending request to origin server {requestInfo['server_url']}")
 
