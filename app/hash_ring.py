@@ -32,7 +32,6 @@ class HashRing:
         self.vnodes = vnodes
         self.cons_hash = ConsistentHashing()
         self._configure_nodes(nodes)
-        self.heartbeat_interval = heartbeat_intval
         self.flush_interval = flush_interval
 
     def handle_heartbeat(node_name):
