@@ -34,25 +34,28 @@ class Proxy:
 
         # parse the get request
         requestInfo = self.parse_request_info(clientAddr, clientData)
-        print("sending request to origin server")
+        if requestInfo["server_url"] == "":
+            print("Receive a heartbeat message from a Cache Server {clientAddr}")
+        else:
+            print("sending request to origin server")
 
-        # create server socket (socket to talk to origin server)
-        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        serverSocket.connect((requestInfo["server_url"], requestInfo["server_port"]))
-        serverSocket.send(requestInfo["client_data"])
-        print("receiving reply from origin server")
+            # create server socket (socket to talk to origin server)
+            serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            serverSocket.connect((requestInfo["server_url"], requestInfo["server_port"]))
+            serverSocket.send(requestInfo["client_data"])
+            print("receiving reply from origin server")
 
-        # get reply for server socket (origin server)
-        reply = serverSocket.recv(RECV_SIZE)
-        print("sending reply to client server")
-        while len(reply):
-            clientSocket.send(reply)
+            # get reply for server socket (origin server)
             reply = serverSocket.recv(RECV_SIZE)
-        clientSocket.send(str.encode("\r\n\r\n"))
-        print("finished sending reply to client")
+            print("sending reply to client server")
+            while len(reply):
+                clientSocket.send(reply)
+                reply = serverSocket.recv(RECV_SIZE)
+            clientSocket.send(str.encode("\r\n\r\n"))
+            print("finished sending reply to client")
 
-        serverSocket.close()
-        clientSocket.close()
+            serverSocket.close()
+            clientSocket.close()
 
     '''
     This function processes the client data and separates out the essential information
