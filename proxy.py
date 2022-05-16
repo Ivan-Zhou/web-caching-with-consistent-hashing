@@ -55,7 +55,7 @@ class Proxy:
             clientSocket.send(str.encode("\r\n\r\n"))
             print("finished sending reply to client")
 
-        serverSocket.close()
+            serverSocket.close()
         clientSocket.close()
 
     '''
