@@ -34,7 +34,7 @@ class HashRing:
         self._configure_nodes(nodes)
         self.flush_interval = flush_interval
 
-    def handle_heartbeat(node_name):
+    def handle_heartbeat(self, node_name):
         """
         Handle a heartbeat message. Update the lastHeartbeat time in the meta
         data associated with node with "node_name". Do nothing if no such node

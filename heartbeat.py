@@ -11,7 +11,7 @@ def send_heartbeat():
         serverSocket = socket(AF_INET, SOCK_STREAM)
         serverSocket.connect((master_address["host"], master_address["port"]))
         serverSocket.send("heartbeat".encode())
-        sleep(BEATWAIT)
+        sleep(HEART_BEAT_INTERVAL)
 
 
 if __name__ == '__main__':
