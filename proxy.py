@@ -115,7 +115,6 @@ class Proxy:
             try:
                 clientSocket, clientAddr = self.proxySocket.accept()
                 clientData = clientSocket.recv(RECV_SIZE)
-                print("recieved a request from ", clientAddr)
                 _thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, encoding='utf-8', errors='ignore')))
             except KeyboardInterrupt:
                     clientSocket.close()
