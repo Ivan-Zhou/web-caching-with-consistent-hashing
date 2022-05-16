@@ -4,7 +4,8 @@ import time
 from .consistent_hashing import ConsistentHashing
 
 class HashRing:
-    def __init__(self, nodes=[], hash_fn=None, vnodes=100, weight_fn=None):
+    def __init__(self, nodes=[], hash_fn=None, vnodes=100, weight_fn=None,
+                 flush_interval = 10000):
         """
         Create a new hash ring.
 
