@@ -2,9 +2,11 @@ import socket
 import sys
 import signal
 import _thread
+import threading
 
 from utils import get_master_address
-from app import HashRing
+from app import HashRing, FLUSH_INTERVAL
+from heartbeat import HEART_BEAT_INTERVAL
 
 MAX_CONN = 1
 RECV_SIZE = 4096
@@ -26,8 +28,7 @@ class Proxy:
             self.proxySocket.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
         except Exception as e:
-            print("Some error occured on init")
-            print(e)
+            print(f"Error occured on Proxy init: {e}")
             self.proxySocket.close()
             return
 
@@ -35,7 +36,7 @@ class Proxy:
     def request_handler(self, clientSocket, clientAddr, clientData):
         if clientData == "heartbeat":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
-
+            self._handle_heartbeat(clientAddr)
         else:
             requestInfo = self.parse_request_info(clientAddr, clientData)
             print(f"Sending request to origin server {requestInfo['server_url']}")
@@ -121,6 +122,40 @@ class Proxy:
                     self.proxySocket.close()
                     break
 
+    def _handle_heartbeat(self, clientAddr):
+        # use the Host Address as the nodename
+        self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
 
-proxy = Proxy()
-proxy.service_requests()
+    def get_node_name_for_hashkey(self, hash_key):
+        """
+          Get the nodename for a hash key.
+          Parameters
+          ----------
+          hash_key : str
+          Return
+          ----------
+          node_name : str
+        """
+        node_name = self.hash_ring.get_node(hash_key)
+        return node_name
+
+    def _flush(self):
+        """
+          Remove inactive nodes. Called every self.flush_interval
+          milliseconds.
+        """
+        self.hash_ring.flush()
+
+    def manage_cache_server(self):
+        """
+        Run scheduled tasks in thread to maintain cache servers
+        """
+        t1 = threading.Thread(target=self._flush)
+        t1.start()
+        t1.join()
+
+
+if __name__ == '__main__':
+    proxy = Proxy()
+    proxy.service_requests()
+    proxy.manage_cache_server()

@@ -3,7 +3,7 @@ from time import time, ctime, sleep
 
 from utils import get_master_address
 
-BEATWAIT = 1
+HEART_BEAT_INTERVAL = 1
 
 def send_heartbeat():
     master_address = get_master_address()

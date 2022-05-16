@@ -3,9 +3,18 @@ import time
 
 from .consistent_hashing import ConsistentHashing
 
+FLUSH_INTERVAL = 10  # seconds
+
+
 class HashRing:
-    def __init__(self, nodes=[], hash_fn=None, vnodes=100, weight_fn=None,
-                 flush_interval = 10000):
+    def __init__(
+        self,
+        nodes=[],
+        hash_fn=None,
+        vnodes=100,
+        weight_fn=None,
+        flush_interval=FLUSH_INTERVAL,
+    ):
         """
         Create a new hash ring.
 
@@ -28,15 +37,15 @@ class HashRing:
 
     def handle_heartbeat(node_name):
         """
-          Handle a heartbeat message. Update the lastHeartbeat time in the meta
-          data associated with node with "node_name". Do nothing if no such node
-          exists (e.g. the heartbeat message arrives too late due to network delays
-          and the node has already been deleted due to being inactive.
+        Handle a heartbeat message. Update the lastHeartbeat time in the meta
+        data associated with node with "node_name". Do nothing if no such node
+        exists (e.g. the heartbeat message arrives too late due to network delays
+        and the node has already been deleted due to being inactive.
 
-          Parameters
-          ----------
-          node_name : str
-              name identifying the node.
+        Parameters
+        ----------
+        node_name : str
+            name identifying the node.
         """
         node_meta = self.cons_hash.get_node_meta(node_name)
         if node_meta is not None:
