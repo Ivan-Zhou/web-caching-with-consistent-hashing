@@ -57,9 +57,8 @@ SERVERIP = master_address["host"] # "http://" +
 HBPORT = master_address["port"]
 BEATWAIT = 1             # number of seconds between heartbeats
 
-serverSocket = socket(AF_INET, SOCK_STREAM)
-serverSocket.connect((SERVERIP, HBPORT))
-
 while 1:
+    serverSocket = socket(AF_INET, SOCK_STREAM)
+    serverSocket.connect((SERVERIP, HBPORT))
     serverSocket.send("heartbeat".encode())
     sleep(BEATWAIT)
