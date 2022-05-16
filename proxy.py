@@ -4,6 +4,7 @@ import signal
 import _thread
 
 from utils import get_master_address
+from app import HashRing
 
 MAX_CONN = 1
 RECV_SIZE = 4096
@@ -23,6 +24,7 @@ class Proxy:
             self.proxySocket.bind((master_address["host"], master_address["port"]))
 
             self.proxySocket.listen(MAX_CONN) # become a proxy socket
+            self.hash_ring = HashRing()
         except Exception as e:
             print("Some error occured on init")
             print(e)
@@ -31,10 +33,9 @@ class Proxy:
 
 
     def request_handler(self, clientSocket, clientAddr, clientData):
-        print(f"\nclientAddr: {clientAddr}")
-        print(f"clientData: {clientData}")
         if clientData == "heartbeat":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
+
         else:
             requestInfo = self.parse_request_info(clientAddr, clientData)
             print(f"Sending request to origin server {requestInfo['server_url']}")
