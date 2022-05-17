@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import _thread
 import socket
 import os
