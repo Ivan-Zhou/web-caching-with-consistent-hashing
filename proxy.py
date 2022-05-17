@@ -34,6 +34,14 @@ class Proxy:
 
 
     def request_handler(self, clientSocket, clientAddr, clientData):
+        data = {
+            "clientAddr": clientAddr,
+            "clientData": clientData,
+            "clientSocket": clientSocket,
+        }
+        import json
+        with open('get_request_example.json', 'w') as f:
+            json.dump(data, f)
         if clientData == "heartbeat":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             self._handle_heartbeat(clientAddr)
