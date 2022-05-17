@@ -17,7 +17,7 @@ class Proxy:
             self.proxySocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
             # bind the socket to a public host, and a port   
-            self.proxySocket.bind(('myth56.stanford.edu', 30657))
+            self.proxySocket.bind(('myth54.stanford.edu', 30657))
 
             self.proxySocket.listen(MAX_CONN) # become a proxy socket
         except Exception as e:

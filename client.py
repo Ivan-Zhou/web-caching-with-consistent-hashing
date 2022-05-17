@@ -1,7 +1,7 @@
 import requests
 
 proxies = {
-	'http': 'http://myth56.stanford.edu:30657'
+	'http': 'http://myth54.stanford.edu:30657'
 }
 
 url = 'http://example.com'
