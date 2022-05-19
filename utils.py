@@ -1,6 +1,8 @@
 import json
 
 ADDRESS_DATA_FILE = "data.json"
+MAX_CONN = 1
+RECV_SIZE = 4096
 
 def get_address_data():
     with open(ADDRESS_DATA_FILE, "r") as f:
@@ -55,7 +57,7 @@ def parse_request_info(client_addr, client_data):
             "server_url" : server_url,
             "total_url" : url,
             "client_data" : str.encode(client_data),
-                            "protocol" : protocol,
+            "protocol" : protocol,
             "method" : first_line_tokens[0],
         }
 

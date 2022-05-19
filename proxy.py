@@ -1,15 +1,12 @@
-import socket
 import sys
 import signal
 import _thread
 import threading
 
-from utils import get_master_address, parse_request_info
+from socket import socket
+from utils import get_master_address, parse_request_info, MAX_CONN, RECV_SIZE
 from app import HashRing, FLUSH_INTERVAL
 from heartbeat import HEART_BEAT_INTERVAL
-
-MAX_CONN = 1
-RECV_SIZE = 4096
 
 # socketToClient talks to browsers
 # socketToOrigin talks to origin
@@ -19,7 +16,7 @@ class Proxy:
         try:
 
             # Create a TCP socket
-            self.socketToClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socketToClient = socket(socket.AF_INET, socket.SOCK_STREAM)
 
             # Re-use the socket
             self.socketToClient.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -30,6 +27,7 @@ class Proxy:
 
             self.socketToClient.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
+            self.threads = []
         except Exception as e:
             print(f"Error occured on Proxy init: {e}")
             self.socketToClient.close()
@@ -41,10 +39,26 @@ class Proxy:
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             self._handle_heartbeat(clientAddr)
         else:
+
+            # parse request info to figure out if GET or POST
+
+            # if GET, send all of clientData to cache server
+            # only needs one send, not a chunked send
+            # from requestInfo, can get URL to do the consistent hashing
+            # consistent hashing must tell us which cache
+            # To direct the request to the cache, we need the cache server's URL
+            # and port
+
+            # For the reply from the cache, need to do in a while loop
+            # because response can be big
+
+            # if POST (or other), do the process of sending request to origin
+            # (this is what is written below)
+
             requestInfo = parse_request_info(clientAddr, clientData)
             print(f"Sending request to origin server {requestInfo['server_url']}")
             # create server socket (socket to talk to origin server)
-            socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socketToOrigin = socket(socket.AF_INET, socket.SOCK_STREAM)
             socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
             socketToOrigin.send(requestInfo["client_data"])
             print("receiving reply from origin server")
@@ -68,11 +82,28 @@ class Proxy:
                 # clientSocket is the socket on client side
                 clientSocket, clientAddr = self.socketToClient.accept()
                 clientData = clientSocket.recv(RECV_SIZE)
-                _thread.start_new_thread(self.request_handler, (clientSocket, clientAddr, str(clientData, encoding='utf-8', errors='ignore')))
+
+                # is this a good idea? 2 threads might contact the same 
+                # cache for the same data at once
+                
+                # maybe, shouldn't be multi-threaded
+                # we can multi thread to different caches,
+                # but for a given cache should be serial
+                t = threading.Thread(
+                    target=self.request_handler, 
+                    args=(clientSocket, clientAddr, 
+                            str(clientData, encoding='utf-8', errors='ignore')))
+                self.threads.append(t)
+                t.start()
+
             except KeyboardInterrupt:
-                    clientSocket.close()
-                    self.socketToClient.close()
-                    break
+                # join all the threads
+                for t in self.threads:
+                    t.join()
+
+                clientSocket.close()
+                self.socketToClient.close()
+                break
 
     def _handle_heartbeat(self, clientAddr):
         # use the Host Address as the nodename
