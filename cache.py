@@ -3,6 +3,7 @@ import socket
 import os
 from datetime import datetime, timedelta
 from utils import parse_request_info, MAX_CONN, RECV_SIZE
+from heartbeat import send_heartbeat
 # CACHE_DIR = "./cache"
 from request import get
 
@@ -16,9 +17,7 @@ class Cache():
             self.socketToMaster = socket(socket.AF_INET, socket.SOCK_STREAM)
             # Re-use the socket
             self.socketToMaster.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
             self.socketToMaster.bind(HOST, PORT)
-
             self.socketToMaster.listen(MAX_CONN) # become a cache socket
         
         except Exception as e:
@@ -45,7 +44,6 @@ class Cache():
         #
         #        
     
-        # # Make cache directory ??store in memory
         # if not os.path.isdir(CACHE_DIR):
         #     os.makedirs(CACHE_DIR)
         # for file in os.listdir(CACHE_DIR):
@@ -60,7 +58,7 @@ class Cache():
         ip = get('https://api.ipify.org').text
         print(f'The public IP address of cache is: {ip}')
         #TODO modify heartbeat method in heartbeat.py
-        masterSocket.send_heartbeat(ip_and_port)
+        #TODO bind the ip
 
     def fetch_from_origin_mem(self, masterSocket, masterAddr, requestInfo):
         try: 
@@ -93,7 +91,7 @@ class Cache():
           
         except Exception as e:
             #TODO only unlock when locked before
-            self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
+            # handled by rwlock
             masterSocket.close()
             print(e)
         return
@@ -119,11 +117,11 @@ class Cache():
         return datetime.now() - cacheTime > timedelta(days=1)
 
     
-    def flush_cache():
-        for cacheKey in cacheDict:
+    def flush_cache(self):
+        for cacheKey in self.cacheDict:
             cacheKey["lock"].acquire_write()
             if self.ifExpired(cacheKey):
-                del cacheDict[cacheKey]
+                del self.cacheDict[cacheKey]
 
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
         requestInfo = parse_request_info(masterAddr, masterData)
@@ -132,13 +130,13 @@ class Cache():
         
         if cacheKey in self.cacheDict and !self.ifExpired(cacheKey):
             #Prevent the key is deleted after checking existence
-            cacheDictLock.lock()
+           
             # send in chunks to master server
             for chunk in self.cacheDict[cacheKey]["data"]:
                 masterSocket.send(chunk)
 
             cacheKey["lock"].release_read()
-            cacheDictLock.release()
+         
 
         else:
             self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
@@ -152,12 +150,13 @@ class Cache():
         """
         t1 = threading.Thread(target=self.server_run)
         # TODO add function to flush cache
-        flush_cache()
-        # t2 = threading.Timer(FLUSH_INTERVAL, self._flush)
+        
+        t2 = threading.Timer(FLUSH_INTERVAL, self.flush_cache)
+        t3 = threading.Timer(HEART_BEAT_INTERNAL, self.send_heartbeat)
         t1.start()
-        # t2.start()
+        t2.start()
         t1.join()
-        # t2.join()
+        t2.join()
 
 
     # def request_handler(masterSocket, masterAddr, masterData):

@@ -31,8 +31,12 @@ class ReadWriteLock:
         """ Acquire a write lock. Blocks until there are no
         acquired read or write locks. """
         self._read_ready.acquire()
-        while self._readers > 0:
-            self._read_ready.wait()
+        try: 
+            while self._readers > 0:
+                self._read_ready.wait()
+        #in case exception
+        finally:
+            self._read_ready.release()
 
     def release_write(self):
         """ Release a write lock. """
