@@ -3,7 +3,8 @@ import socket
 import os
 from datetime import datetime, timedelta
 from utils import parse_request_info, MAX_CONN, RECV_SIZE
-CACHE_DIR = "./cache"
+# CACHE_DIR = "./cache"
+from request import get
 
 # socketToMaster talks to master
 # masterSocket is the socket in master which is used to talk to cache server
@@ -30,6 +31,8 @@ class Cache():
         # we can also have a lock per cache entry
         # and one coarse grain lock for the dict
         self.cacheDict = {}
+        self.cacheDictLock = Lock()
+       
 
         #
         # {
@@ -47,6 +50,17 @@ class Cache():
         #     os.makedirs(CACHE_DIR)
         # for file in os.listdir(CACHE_DIR):
         #     os.remove(CACHE_DIR + "/" + file)
+    
+   
+        
+    #TODO register in the live cache list of master
+
+    def register_in_master():
+        #get ip and port number from 3rd party, dependency issue
+        ip = get('https://api.ipify.org').text
+        print(f'The public IP address of cache is: {ip}')
+        #TODO modify heartbeat method in heartbeat.py
+        masterSocket.send_heartbeat(ip_and_port)
 
     def fetch_from_origin_mem(self, masterSocket, masterAddr, requestInfo):
         try: 
@@ -61,8 +75,11 @@ class Cache():
             print("sending reply from cache to master server")
             self.cacheDict[requestInfo["total_url"]] = {
                 "data": [],
-                "timestamp": datetime.now()
+                "timestamp": datetime.now(),
+                "lock": ReadWriteLock()
             }
+            self.cacheDict[requestInfo["total_url"]]["lock"].acquire_write()
+
             while len(reply):
                 masterSocket.send(reply)
                 self.cacheDict[requestInfo["total_url"]]["data"].append(reply)
@@ -70,10 +87,13 @@ class Cache():
                 
             masterSocket.send(str.encode("\r\n\r\n"))
             print("finished sending reply to master server")
-        
+
+            self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
             socketToOrigin.close()
           
         except Exception as e:
+            #TODO only unlock when locked before
+            self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
             masterSocket.close()
             print(e)
         return
@@ -98,25 +118,41 @@ class Cache():
         cacheTime = self.cacheDict[key]["timestamp"]
         return datetime.now() - cacheTime > timedelta(days=1)
 
+    
+    def flush_cache():
+        for cacheKey in cacheDict:
+            cacheKey["lock"].acquire_write()
+            if self.ifExpired(cacheKey):
+                del cacheDict[cacheKey]
+
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
         requestInfo = parse_request_info(masterAddr, masterData)
         cacheKey = requestInfo["total_url"]
-        if cacheKey in self.cacheDict and self.ifExpired(cacheKey):
+        cacheKey["lock"].acquire_read()
+        
+        if cacheKey in self.cacheDict and !self.ifExpired(cacheKey):
+            #Prevent the key is deleted after checking existence
+            cacheDictLock.lock()
             # send in chunks to master server
             for chunk in self.cacheDict[cacheKey]["data"]:
                 masterSocket.send(chunk)
+
+            cacheKey["lock"].release_read()
+            cacheDictLock.release()
+
         else:
             self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
-
+        
+        
         masterSocket.close()
-
+   
     def run(self):
         """
         Run scheduled tasks in thread to maintain cache servers
         """
         t1 = threading.Thread(target=self.server_run)
         # TODO add function to flush cache
-        # 
+        flush_cache()
         # t2 = threading.Timer(FLUSH_INTERVAL, self._flush)
         t1.start()
         # t2.start()
@@ -208,5 +244,7 @@ class Cache():
     #         print(e)
     #     return
 
-cache = Cache()
-cache.run()
+if __name__ == '__main__':
+    cache = Cache()
+    cache.run()
+

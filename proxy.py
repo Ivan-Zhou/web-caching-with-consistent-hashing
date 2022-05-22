@@ -11,6 +11,8 @@ from heartbeat import HEART_BEAT_INTERVAL
 # socketToClient talks to browsers
 # socketToOrigin talks to origin
 
+#TODO add a live list of cache servers
+
 class Proxy:
     def __init__(self):
         try:
@@ -39,40 +41,51 @@ class Proxy:
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             self._handle_heartbeat(clientAddr)
         else:
+            requestInfo = parse_request_info(clientAddr, clientData)
+            print(f"Sending request to origin server {requestInfo['server_url']}")
+            
+            if requestInfo["method"] == "GET":
+                # create server socket (socket to talk to origin server)
+                socketToCache = socket(socket.AF_INET, socket.SOCK_STREAM)
+                # TODO use cache server's URL and port (from consistent hashing) 
+                #to direct the request the cache, node_name?
+                socketToCache.connect((requestInfo["server_url"], requestInfo["server_port"]))
+                # if GET, send all of clientData to cache server
+                # only needs one send, not a chunked send
+                socketToCache.send(requestInfo["client_data"])
+                print("receiving reply from origin server")
 
-            # parse request info to figure out if GET or POST
+                # get reply for cache
+                reply = socketToCache.recv(RECV_SIZE)
+                print("sending reply to client server")
 
-            # if GET, send all of clientData to cache server
-            # only needs one send, not a chunked send
-            # from requestInfo, can get URL to do the consistent hashing
-            # consistent hashing must tell us which cache
-            # To direct the request to the cache, we need the cache server's URL
-            # and port
-
-            # For the reply from the cache, need to do in a while loop
-            # because response can be big
+                # For the reply from the cache, need to do in a while loop
+                # because response can be big
+                while len(reply):
+                    clientSocket.send(reply)
+                    reply = socketToCache.recv(RECV_SIZE)
+                clientSocket.send(str.encode("\r\n\r\n"))
+                print("finished sending reply to client for GET request")
 
             # if POST (or other), do the process of sending request to origin
             # (this is what is written below)
+            else:
+                # create server socket (socket to talk to origin server)
+                socketToOrigin = socket(socket.AF_INET, socket.SOCK_STREAM)
+                socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
+                socketToOrigin.send(requestInfo["client_data"])
+                print("receiving reply from origin server")
 
-            requestInfo = parse_request_info(clientAddr, clientData)
-            print(f"Sending request to origin server {requestInfo['server_url']}")
-            # create server socket (socket to talk to origin server)
-            socketToOrigin = socket(socket.AF_INET, socket.SOCK_STREAM)
-            socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
-            socketToOrigin.send(requestInfo["client_data"])
-            print("receiving reply from origin server")
-
-            # get reply for server socket (origin server)
-            reply = socketToOrigin.recv(RECV_SIZE)
-            print("sending reply to client server")
-            while len(reply):
-                clientSocket.send(reply)
+                # get reply for server socket (origin server)
                 reply = socketToOrigin.recv(RECV_SIZE)
-            clientSocket.send(str.encode("\r\n\r\n"))
-            print("finished sending reply to client")
+                print("sending reply to client server")
+                while len(reply):
+                    clientSocket.send(reply)
+                    reply = socketToOrigin.recv(RECV_SIZE)
+                clientSocket.send(str.encode("\r\n\r\n"))
+                print("finished sending reply to client for non-GET request")
 
-            socketToOrigin.close()
+                socketToOrigin.close()
         clientSocket.close()
 
 
