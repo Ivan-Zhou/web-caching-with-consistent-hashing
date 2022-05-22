@@ -36,20 +36,22 @@ class Proxy:
         # find the cache node
         node_name = self.hash_ring.get_node(clientData)
         node_meta = self.hash_ring.get_node_meta(node_name)
-        try:
-            cacheServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            # TODO: make a socket connection to the server
+        while True:
+            try:
+                cacheServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # TODO: make a socket connection to the server
 
-            # forward request to the client
-            cacheServerSocket.send(clientData.encode())
-            reply = cacheServerSocket.recv(RECV_SIZE)
-            while len(reply):
-                clientSocket.send(reply)
+                # forward request to the client
+                cacheServerSocket.send(clientData.encode())
                 reply = cacheServerSocket.recv(RECV_SIZE)
-            clientSocket.send(str.encode("\r\n\r\n"))
-            print("finished sending reply to client")
-        except error:
-            self.hash_ring.remove_node(node_name)
+                while len(reply):
+                    clientSocket.send(reply)
+                    reply = cacheServerSocket.recv(RECV_SIZE)
+                clientSocket.send(str.encode("\r\n\r\n"))
+                print("finished sending reply to client")
+                break
+            except error:
+                self.hash_ring.remove_node(node_name)
 
     def request_handler(self, clientSocket, clientAddr, clientData):
         if clientData == "heartbeat":
