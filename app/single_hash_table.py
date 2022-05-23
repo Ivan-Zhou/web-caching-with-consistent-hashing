@@ -1,12 +1,4 @@
-from hashlib import md5
-
-FLUSH_INTERVAL = 10
-
-def md5_hash(key):
-    """
-    Returns the md5 hash of the key.
-    """
-    return int(md5(str(key).encode("utf-8")).hexdigest(), 16)
+from hash_utils import FLUSH_INTERVAL, md5_hash
 
 class singleHashTable:
     def __init__(self, hash_fn=md5_hash):

@@ -1,12 +1,5 @@
 from hashlib import md5
-
-
-def md5_hash(key):
-    """
-    Returns the md5 hash of the key.
-    """
-    return int(md5(str(key).encode("utf-8")).hexdigest(), 16)
-
+from hash_utils import md5_hash
 
 class ConsistentHashing:
     def __init__(self, hash_fn=md5_hash):
