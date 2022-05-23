@@ -1,7 +1,6 @@
 import requests
 from utils import get_master_address
 
-
 def get_request(url):
 	master_address = get_master_address()
 	proxies = {
