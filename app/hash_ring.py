@@ -1,8 +1,8 @@
 from bisect import bisect
 import time
 
-from consistent_hashing import ConsistentHashing
-from hash_utils import FLUSH_INTERVAL
+from .consistent_hashing import ConsistentHashing
+from .hash_utils import FLUSH_INTERVAL
 
 class HashRing:
     def __init__(

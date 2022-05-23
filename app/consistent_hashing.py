@@ -1,5 +1,5 @@
 from hashlib import md5
-from hash_utils import md5_hash
+from .hash_utils import md5_hash
 
 class ConsistentHashing:
     def __init__(self, hash_fn=md5_hash):
