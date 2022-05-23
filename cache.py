@@ -28,27 +28,27 @@ class Cache():
         #      {
         #          data: ["GET R", "EQUES", "T DAT", "A"],
         #          timestamp: "10:01 PM"
-        #      } 
+        #      }
         # }
         #
-        #        
+        #
 
         # Solution:
         # Remove the data (set it to None). Set timestamp to None. Keep lock.
-        # 
+        #
         # SWMR lock around entire cache dict
         # Adding new entry = lock entire dict as writer
-        # Editing existing entry = lock entire dict as reader, lock 
-   
+        # Editing existing entry = lock entire dict as reader, lock
+
 
     def fetch_from_origin_mem(self, masterSocket, masterAddr, requestInfo):
-        try: 
+        try:
             # create server socket (socket to talk to origin server)
-            socketToOrigin = socket(socket.AF_INET, socket.SOCK_STREAM)
+            socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
             socketToOrigin.send(requestInfo["client_data"])
             print("receiving reply from origin server")
-        
+
             # get reply for server socket (origin server)
             reply = socketToOrigin.recv(RECV_SIZE)
             print("sending reply from cache to master server")
@@ -61,7 +61,7 @@ class Cache():
                 "lock": ReadWriteLock()
             }
             self.cacheDict[requestInfo["total_url"]]["lock"].acquire_write()
-            # release high level SWMR lock as writer 
+            # release high level SWMR lock as writer
             self.cacheDictLock.release_write()
 
             chunkedData = []
@@ -69,7 +69,7 @@ class Cache():
                 masterSocket.send(reply)
                 chunkedData.append(reply)
                 reply = socketToOrigin.recv(RECV_SIZE)
-                
+
             masterSocket.send(str.encode("\r\n\r\n"))
             print("finished sending reply to master server")
 
@@ -81,16 +81,16 @@ class Cache():
             self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
             self.cacheDictLock.release_read()
             socketToOrigin.close()
-          
+
         except Exception as e:
             masterSocket.close()
             print(e)
         return
-       
+
     def server_init(self):
         try:
             # Create a TCP socket
-            self.socketToMaster = socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socketToMaster = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socketToMaster.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             # get IP and PORT from 3rd party (potential dependency issue)
             IP = get('https://api.ipify.org').text
@@ -102,7 +102,7 @@ class Cache():
         except Exception as e:
             print(f"Error occured on Cache server init: {e}")
             self.socketToMaster.close()
-        
+
         send_heartbeat()
 
 
@@ -112,7 +112,7 @@ class Cache():
                 masterSocket, masterAddr = self.socketToMaster.accept()
                 masterData = masterSocket.recv(RECV_SIZE)
                 t = threading.Thread(
-                    target=self.request_handler_mem, 
+                    target=self.request_handler_mem,
                     args=(masterSocket, masterAddr, str(masterData, encoding='utf-8', errors='ignore')))
                 self.threads.append(t)
                 t.start()
@@ -130,7 +130,7 @@ class Cache():
         cacheTime = self.cacheDict[key]["timestamp"]
         return datetime.now() - cacheTime > timedelta(days=CACHE_EXPIRATION)
 
-    
+
     def flush_cache(self):
         '''
         Clear out contents of an expired entry. Set data field to None.
@@ -157,13 +157,13 @@ class Cache():
 
         # acquire coarse grain lock as a reader
         self.cacheDictLock.acquire_read()
-        
+
         if cacheKey in self.cacheDict:
             chunks = None
             # acquire fine grain lock as a reader
             self.cacheDict[cacheKey]["lock"].acquire_read()
-            if not self.ifExpired(cacheKey): 
-                found = True  
+            if not self.ifExpired(cacheKey):
+                found = True
                 chunks = self.cacheDict[cacheKey]["data"].view()
             # release fine grain lock as a reader
             self.cacheDict[cacheKey]["lock"].release_read()
@@ -176,18 +176,18 @@ class Cache():
                     masterSocket.send(chunk)
             else:
                 self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
-        
+
         if not found:
             self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
-        
-        
+
+
         masterSocket.close()
-   
+
     def run(self):
         """
         Run scheduled tasks in thread to maintain cache servers
         """
-        t_main = threading.Thread(target=self.server_run)        
+        t_main = threading.Thread(target=self.server_run)
         t_cache_flush = threading.Timer(CACHE_FLUSH_INTERVAL, self.flush_cache)
         t_heartbeat = threading.Timer(HEART_BEAT_INTERVAL, send_heartbeat)
 
@@ -221,9 +221,9 @@ if __name__ == '__main__':
     #         write_to_cache()
 
 
-       
+
     # # Check if the requested resource has been cached
-    # def check_if_cached(cacheKey):  
+    # def check_if_cached(cacheKey):
     #     '''
     #     File version
     #     '''
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     #     fileTime = datetime.fromtimestamp(path.getctime(filePath))
     #     return datetime.now() - fileTime > timedelta(days=1)
 
-    # #Clear cache when expired 
+    # #Clear cache when expired
     # def clearCache():
     #     #requestInfo is class variable
     #     cacheFiles = os.listdir(CACHE_DIR)
@@ -260,16 +260,16 @@ if __name__ == '__main__':
     #         chunk = f.read(RECV_SIZE)
     #     f.close()
 
- 
+
 # fetch from origin and write to cache
     # def fetch_from_origin(masterSocket, masterAddr, requestInfo):
-    #     try: 
+    #     try:
     #         # create server socket (socket to talk to origin server)
     #         socketToOrigin = socket(socket.AF_INET, socket.SOCK_STREAM)
     #         socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
     #         socketToOrigin.send(requestInfo["client_data"])
     #         print("receiving reply from origin server")
-        
+
     #         # get reply for server socket (origin server)
     #         reply = socketToOrigin.recv(RECV_SIZE)
     #         f = open(cachePath, "w+")
@@ -278,13 +278,13 @@ if __name__ == '__main__':
     #             masterSocket.send(reply)
     #             f.write(str(reply, 'utf-8'))
     #             reply = socketToOrigin.recv(RECV_SIZE)
-                
+
     #         masterSocket.send(str.encode("\r\n\r\n"))
     #         print("finished sending reply to master server")
     #         f.close()
-        
+
     #         socketToOrigin.close()
-          
+
     #     except Exception as e:
     #         masterSocket.close()
     #         print(e)

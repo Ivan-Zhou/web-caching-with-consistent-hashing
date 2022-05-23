@@ -3,7 +3,7 @@ import signal
 import _thread
 import threading
 
-from socket import socket
+import socket
 from utils import get_master_address, get_cache_port, parse_request_info, MAX_CONN, RECV_SIZE
 from app import HashRing, FLUSH_INTERVAL
 from heartbeat import HEART_BEAT_INTERVAL
@@ -16,22 +16,21 @@ class Proxy:
         try:
 
             # Create a TCP socket
-            self.socketToClient = socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socketToClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             # Re-use the socket
             self.socketToClient.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
             # bind the socket to a public host, and a port
             master_address = get_master_address()
-            self.socketToClient.bind((master_address["host"], master_address["port"]))
+            self.socketToClient.bind(("", master_address["port"]))
 
             self.socketToClient.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
             self.threads = []
         except Exception as e:
             print(f"Error occured on Proxy init: {e}")
-            self.socketToClient.close()
-            return
+            exit()
 
     def request_handler(self, clientSocket, clientAddr, clientData):
         if clientData == "heartbeat":
@@ -39,53 +38,55 @@ class Proxy:
             self._handle_heartbeat(clientAddr)
         else:
             requestInfo = parse_request_info(clientAddr, clientData)
-            
+
             if requestInfo["method"] == "GET":
                 # create server socket (socket to talk to origin server)
-                socketToCache = socket(socket.AF_INET, socket.SOCK_STREAM)
+                socketToCache = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                try:
+                    cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
+                    cachePort = get_cache_port()
 
-                cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
-                cachePort = get_cache_port()
+                    socketToCache.connect((cacheIP, cachePort))
+                    # send all of clientData to cache server
+                    # only needs one send, not a chunked send
+                    socketToCache.send(requestInfo["client_data"])
+                    print("receiving reply from cache server")
 
-                socketToCache.connect((cacheIP, cachePort))
-                # send all of clientData to cache server
-                # only needs one send, not a chunked send
-                socketToCache.send(requestInfo["client_data"])
-                print("receiving reply from cache server")
-
-                # get reply for cache
-                reply = socketToCache.recv(RECV_SIZE)
-                print("sending reply from cache to client server")
-
-                # For the reply from the cache, need to do in a while loop
-                # because response can be big
-                while len(reply):
-                    clientSocket.send(reply)
+                    # get reply for cache
                     reply = socketToCache.recv(RECV_SIZE)
-                clientSocket.send(str.encode("\r\n\r\n"))
-                print("finished sending reply to client for GET request")
+                    print("sending reply from cache to client server")
+
+                    # For the reply from the cache, need to do in a while loop
+                    # because response can be big
+                    while len(reply):
+                        clientSocket.send(reply)
+                        reply = socketToCache.recv(RECV_SIZE)
+                    clientSocket.send(str.encode("\r\n\r\n"))
+                    print("finished sending reply to client for GET request")
+                    return
+                except Exception as e:
+                    print(f"Fail to connect to cache server: {e}")
 
             # if POST (or other), do the process of sending request to origin
             # (this is what is written below)
-            else:
-                print(f"Sending request to origin server {requestInfo['server_url']}")
+            print(f"Sending request to origin server {requestInfo['server_url']}")
 
-                # create server socket (socket to talk to origin server)
-                socketToOrigin = socket(socket.AF_INET, socket.SOCK_STREAM)
-                socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
-                socketToOrigin.send(requestInfo["client_data"])
-                print("receiving reply from origin server")
+            # create server socket (socket to talk to origin server)
+            socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
+            socketToOrigin.send(requestInfo["client_data"])
+            print("receiving reply from origin server")
 
-                # get reply for server socket (origin server)
+            # get reply for server socket (origin server)
+            reply = socketToOrigin.recv(RECV_SIZE)
+            print("sending reply to client server")
+            while len(reply):
+                clientSocket.send(reply)
                 reply = socketToOrigin.recv(RECV_SIZE)
-                print("sending reply to client server")
-                while len(reply):
-                    clientSocket.send(reply)
-                    reply = socketToOrigin.recv(RECV_SIZE)
-                clientSocket.send(str.encode("\r\n\r\n"))
-                print("finished sending reply to client for non-GET request")
+            clientSocket.send(str.encode("\r\n\r\n"))
+            print("finished sending reply to client for non-GET request")
 
-                socketToOrigin.close()
+            socketToOrigin.close()
         clientSocket.close()
 
 
@@ -96,15 +97,15 @@ class Proxy:
                 clientSocket, clientAddr = self.socketToClient.accept()
                 clientData = clientSocket.recv(RECV_SIZE)
 
-                # is this a good idea? 2 threads might contact the same 
+                # is this a good idea? 2 threads might contact the same
                 # cache for the same data at once
-                
+
                 # maybe, shouldn't be multi-threaded
                 # we can multi thread to different caches,
                 # but for a given cache should be serial
                 t = threading.Thread(
-                    target=self.request_handler, 
-                    args=(clientSocket, clientAddr, 
+                    target=self.request_handler,
+                    args=(clientSocket, clientAddr,
                             str(clientData, encoding='utf-8', errors='ignore')))
                 self.threads.append(t)
                 t.start()
