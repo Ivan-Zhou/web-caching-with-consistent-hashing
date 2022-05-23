@@ -33,7 +33,6 @@ class Proxy:
             self.socketToClient.close()
             return
 
-    
     def request_handler(self, clientSocket, clientAddr, clientData):
         if clientData == "heartbeat":
             print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
