@@ -5,14 +5,14 @@ import threading
 
 import socket
 from utils import get_master_address, get_cache_port, parse_request_info, MAX_CONN, RECV_SIZE
-from app import HashRing, FLUSH_INTERVAL
+from app import HashRing, singleHashTable, FLUSH_INTERVAL
 from heartbeat import HEART_BEAT_INTERVAL
 
 # socketToClient talks to browsers
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self):
+    def __init__(self, useConsistentCaching = True):
         try:
 
             # Create a TCP socket
@@ -28,6 +28,12 @@ class Proxy:
             self.socketToClient.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
             self.threads = []
+
+            # Single hashtable used as baseline for comparison with consistent caching
+            self.singleHashTable = None
+            if useConsistentCaching is False:
+                self.singleHashTable = singleHashTable()
+
         except Exception as e:
             print(f"Error occured on Proxy init: {e}")
             exit()
@@ -133,7 +139,11 @@ class Proxy:
           ----------
           node_name : str
         """
-        node_name = self.hash_ring.get_node(hash_key)
+        node_name = None
+        if useConsistentCaching is None:
+            node_name = self.hash_ring.get_node(hash_key)
+        else:
+            node_name = self.singleHashTable.get_node(hash_key)
         return node_name
 
     def _flush(self):
@@ -141,7 +151,10 @@ class Proxy:
           Remove inactive nodes. Called every self.flush_interval
           milliseconds.
         """
-        self.hash_ring.flush()
+        if useConsistentCaching is None:
+            self.hash_ring.flush()
+        else:
+            self.singleHashTable.flush()
 
     def run(self):
         """
