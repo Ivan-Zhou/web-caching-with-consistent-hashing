@@ -49,7 +49,7 @@ class Proxy:
                 # create server socket (socket to talk to origin server)
                 socketToCache = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
-                    cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
+                    cacheIP = self.get_node_name_for_key(requestInfo["total_url"])
                     cachePort = get_cache_port()
 
                     socketToCache.connect((cacheIP, cachePort))
@@ -129,7 +129,7 @@ class Proxy:
         # use the Host Address as the nodename
         self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
 
-    def get_node_name_for_hashkey(self, hash_key):
+    def get_node_name_for_key(self, key):
         """
           Get the nodename for a hash key.
           Parameters
@@ -140,10 +140,10 @@ class Proxy:
           node_name : str
         """
         node_name = None
-        if useConsistentCaching is None:
-            node_name = self.hash_ring.get_node(hash_key)
+        if self.singleHashTable is None:
+            node_name = self.hash_ring.get_node(key)
         else:
-            node_name = self.singleHashTable.get_node(hash_key)
+            node_name = self.singleHashTable.get_node(key)
         return node_name
 
     def _flush(self):
@@ -151,7 +151,7 @@ class Proxy:
           Remove inactive nodes. Called every self.flush_interval
           milliseconds.
         """
-        if useConsistentCaching is None:
+        if self.singleHashTable is None:
             self.hash_ring.flush()
         else:
             self.singleHashTable.flush()
