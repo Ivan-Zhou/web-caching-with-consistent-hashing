@@ -149,3 +149,6 @@ class HashRing:
 
     def get_nodes(self):
         return self.cons_hash._nodes.keys()
+
+    def get_node_meta(self, node_name):
+        return self.cons_hash.get_node_meta(node_name)

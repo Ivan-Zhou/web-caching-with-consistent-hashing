@@ -13,6 +13,10 @@ def get_master_address():
     address_data = get_address_data()
     return address_data["master"]
 
+def get_cache_port():
+    address_data = get_address_data()
+    return address_data["cachePort"]
+
 '''
 This function processes the client data and separates out the essential information
 '''
