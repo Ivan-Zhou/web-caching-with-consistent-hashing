@@ -43,6 +43,7 @@ class Cache():
 
     def fetch_from_origin_mem(self, masterSocket, masterAddr, requestInfo):
         try:
+            print("requestInfo:\n", requestInfo)
             # create server socket (socket to talk to origin server)
             socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
@@ -75,7 +76,7 @@ class Cache():
 
             # acquire coarse grain lock as reader, fine grain as writer
             self.cacheDictLock.acquire_read()
-            self.cacheDict[requestInfo["total_url"]]["data"].acquire_write()
+            self.cacheDict[requestInfo["total_url"]]["lock"].acquire_write()
 
             # release fine grain lock as writer, coarse grain as reader
             self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
@@ -92,30 +93,37 @@ class Cache():
             # Create a TCP socket
             self.socketToMaster = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socketToMaster.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            # get IP and PORT from 3rd party (potential dependency issue)
+            # get IP and PORT from 3rd party， only when running on myth
             IP = get('https://api.ipify.org').text
             print(f'The public IP address of cache is: {IP}')
             PORT = get_cache_port()
             # listen for connections to cache server
-            self.socketToMaster.bind(IP, PORT)
+            # self.socketToMaster.bind((IP, PORT)) #running on myth 
+
+            self.socketToMaster.bind(("", PORT)) #running on AWS
             self.socketToMaster.listen(MAX_CONN) # become a cache socket
         except Exception as e:
             print(f"Error occured on Cache server init: {e}")
             self.socketToMaster.close()
 
+        print("socket creation done in server_init")
         send_heartbeat()
+        print("sent first heartbeat. server_init done.")
 
 
     def server_run(self):
+        print("start server run")
         while True:
             try:
                 masterSocket, masterAddr = self.socketToMaster.accept()
+                print("received connection from master")
                 masterData = masterSocket.recv(RECV_SIZE)
                 t = threading.Thread(
                     target=self.request_handler_mem,
                     args=(masterSocket, masterAddr, str(masterData, encoding='utf-8', errors='ignore')))
                 self.threads.append(t)
                 t.start()
+                print("start processing connection from master")
 
             except KeyboardInterrupt:
                 # join threads
@@ -153,13 +161,20 @@ class Cache():
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
         requestInfo = parse_request_info(masterAddr, masterData)
         cacheKey = requestInfo["total_url"]
-        found = False
+
+        print("master data: \n", masterData)
+
+
+        print("begin request handler")
 
         # acquire coarse grain lock as a reader
         self.cacheDictLock.acquire_read()
 
+        print("request handler acquire initial read lock")
+
         if cacheKey in self.cacheDict:
             chunks = None
+            found = False
             # acquire fine grain lock as a reader
             self.cacheDict[cacheKey]["lock"].acquire_read()
             if not self.ifExpired(cacheKey):
@@ -172,12 +187,17 @@ class Cache():
 
             # send in chunks to master server
             if found:
+                print("cache hits for {}".format(requestInfo["total_url"]))
                 for chunk in chunks:
                     masterSocket.send(chunk)
             else:
+                print("fetch from origin to get {}".format(requestInfo["total_url"]))
                 self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
 
-        if not found:
+        else:
+            # release coarse grain lock as a reader
+            self.cacheDictLock.release_read()
+            print("request handler fetch from origin read lock")
             self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
 
 
