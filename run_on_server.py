@@ -199,5 +199,5 @@ class Server:
 
 
 if __name__ == '__main__':
-    proxy = Proxy()
-    proxy.run()
+    server = Server()
+    server.run()
