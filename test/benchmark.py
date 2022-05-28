@@ -1,7 +1,7 @@
 import requests
 import fire
 from time import time
-from utils import get_test_urls
+from utils import get_test_urls, load_image_content
 
 
 def main(n=3):
