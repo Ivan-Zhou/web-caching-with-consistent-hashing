@@ -51,6 +51,7 @@ class Server:
             # send all of clientData to cache server
             # only needs one send, not a chunked send
 
+            clientData = f"GET {url} HTTP/1.1\r\nHost: example.com\r\nUser-Agent: python-requests/2.24.0\r\nAccept-Encoding: gzip, deflate\r\nAccept: */*\r\nConnection: keep-alive\r\n\r\n"
 
             socketToCache.send(clientData.encode())
 
