@@ -1,8 +1,9 @@
 import requests
 import threading
 from utils import get_master_address
-from datetime import datetime
+from time import time
 import pandas as pd
+from test.utils import get_test_urls
 
 
 TEST_URLS = [
@@ -10,12 +11,6 @@ TEST_URLS = [
     "http://www.washington.edu",
 	"http://www.go.com",
 ]
-
-
-def get_test_data(n):
-	df = pd.read_csv("test/test_data.csv")
-	df = df[1:n]
-	return df["url"].tolist()
 
 
 def get_request(url):
@@ -27,7 +22,6 @@ def get_request(url):
 	}
 	try:
 		response = requests.get(url, proxies=proxies)
-		# print(response.text)
 		print("Get response {} for url {}".format(response.status_code, url))
 	except Exception as e:
 		print(f"Fail to get response from proxy due to {e}")
@@ -36,11 +30,11 @@ def get_request(url):
 
 if __name__ == '__main__':
 	# threads = []
-	t_start = datetime.now()
-	test_urls = get_test_data(n=3)
+	t_start = time()
+	test_urls = get_test_urls(n=3)
 	for url in test_urls:
 		# Each thread handling one request
 		get_request(url)
-	t_end = datetime.now()
+	t_end = time()
 	t_execute = t_end - t_start
-	print("Finish all requests, t = {}".format(t_execute))
+	print(f"Finish all {len(test_urls)} requests in {t_execute} seconds")
