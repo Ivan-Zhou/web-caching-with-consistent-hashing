@@ -35,7 +35,7 @@ class ReadWriteLock:
             while self._readers > 0:
                 self._read_ready.wait()
         #in case exception
-        finally:
+        except:
             self._read_ready.release()
 
     def release_write(self):

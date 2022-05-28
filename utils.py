@@ -25,10 +25,12 @@ def parse_request_info(client_addr, client_data):
         lines = client_data.splitlines()
         while lines[len(lines)-1] == '':
             lines.remove('')
+
         first_line_tokens = lines[0].split()
         url = first_line_tokens[1]
 
-        url_pos = url.find("://")
+
+        url_pos = url.find("://") # http://
         if url_pos != -1:
             protocol = url[:url_pos]
             url = url[(url_pos+3):]
@@ -51,6 +53,7 @@ def parse_request_info(client_addr, client_data):
             server_port = int(url[(port_pos+1):path_pos])
             server_url = url[:port_pos]
 
+
         # build up request for server
         first_line_tokens[1] = url[path_pos:]
         lines[0] = ' '.join(first_line_tokens)
@@ -68,3 +71,5 @@ def parse_request_info(client_addr, client_data):
     except Exception as e:
         print(e)
         return None
+
+
