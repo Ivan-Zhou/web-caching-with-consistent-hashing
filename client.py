@@ -14,7 +14,7 @@ TEST_URLS = [
 
 def get_test_data(n):
 	df = pd.read_csv("test/test_data.csv")
-	df = df[:n]
+	df = df[1:n]
 	return df["url"].tolist()
 
 
@@ -27,6 +27,7 @@ def get_request(url):
 	}
 	try:
 		response = requests.get(url, proxies=proxies)
+		# print(response.text)
 		print("Get response {} for url {}".format(response.status_code, url))
 	except Exception as e:
 		print(f"Fail to get response from proxy due to {e}")
