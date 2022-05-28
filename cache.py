@@ -75,12 +75,16 @@ class Cache():
 
             print("FetchFromOrigin start constructing chuncked data")
             chunkedData = []
+            
             while len(reply):
                 masterSocket.send(reply)
+                print("FetchFromOrigin sending a chunk to master")
                 chunkedData.append(reply)
                 reply = socketToOrigin.recv(RECV_SIZE)
 
             self.cacheDict[requestInfo["total_url"]]["data"] = chunkedData
+            for chunk in chunkedData:
+                print(str(chunk, encoding='utf-8', errors='ignore'))
 
             masterSocket.send(str.encode("\r\n\r\n"))
             print("FetchFromOrigin finished sending reply to master server")
@@ -89,6 +93,8 @@ class Cache():
             self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
             self.cacheDictLock.release_read()
             socketToOrigin.close()
+
+            print("FetchFromOrigin finished")
 
         except Exception as e:
             masterSocket.close()
@@ -168,11 +174,12 @@ class Cache():
         print("release coarse grain read lock in flush")
 
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
-
+        # print("Request handler master data: \n", masterData)
         requestInfo = parse_request_info(masterAddr, masterData)
+        # print("Request info: \n", requestInfo)
         cacheKey = requestInfo["total_url"]
-
-        # print("master data: \n", masterData)
+        
+        
         # print("begin request handler")
 
         # acquire coarse grain lock as a reader
@@ -198,6 +205,7 @@ class Cache():
                 print("cache hits for {}".format(requestInfo["total_url"]))
                 for chunk in chunks:
                     masterSocket.send(chunk)
+                    print("CacheHit sending data to master")
                 masterSocket.send(str.encode("\r\n\r\n"))
 
                 print("finished servicing cache hit")
