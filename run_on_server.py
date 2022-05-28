@@ -38,65 +38,6 @@ class Server:
         if clientData == "heartbeat":
             # print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             self._handle_heartbeat(clientAddr)
-        # else:
-            requestInfo = parse_request_info(clientAddr, clientData)
-
-            print("incoming request:\n", clientData)
-            print("parsed request info:\n", requestInfo)
-
-
-            if requestInfo["method"] == "GET":
-                # create server socket (socket to talk to origin server)
-                socketToCache = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                try:
-                    cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
-                    cachePort = get_cache_port()
-
-                    socketToCache.connect((cacheIP, cachePort))
-                    # send all of clientData to cache server
-                    # only needs one send, not a chunked send
-
-
-                    socketToCache.send(clientData.encode())
-
-                    # socketToCache.send(requestInfo["client_data"])
-                    print("receiving reply from cache server")
-
-                    # get reply for cache
-                    reply = socketToCache.recv(RECV_SIZE)
-                    print("sending reply from cache to client")
-
-                    # For the reply from the cache, need to do in a while loop
-                    # because response can be big
-                    while len(reply):
-                        clientSocket.send(reply)
-                        reply = socketToCache.recv(RECV_SIZE)
-                    clientSocket.send(str.encode("\r\n\r\n"))
-                    print("finished sending reply to client for GET request")
-                    return
-                except Exception as e:
-                    print(f"Fail to connect to cache server: {e}")
-
-            else:
-                # if POST (or other), do the process of sending request to origin
-                print(f"Sending request to origin server {requestInfo['server_url']}")
-
-                # create server socket (socket to talk to origin server)
-                socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
-                socketToOrigin.send(requestInfo["client_data"])
-                print("receiving reply from origin server")
-
-                # get reply for server socket (origin server)
-                reply = socketToOrigin.recv(RECV_SIZE)
-                print("FETCH origin, sending reply to client")
-                while len(reply):
-                    clientSocket.send(reply)
-                    reply = socketToOrigin.recv(RECV_SIZE)
-                clientSocket.send(str.encode("\r\n\r\n"))
-                print("finished sending reply to client for non-GET request")
-
-                socketToOrigin.close()
 
         # clientSocket.close()
 
