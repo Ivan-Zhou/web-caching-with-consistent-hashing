@@ -133,10 +133,13 @@ class Server:
         """
         t1 = threading.Thread(target=self.service_requests)
         t2 = threading.Timer(FLUSH_INTERVAL, self._flush)
+        t3 = threading.Thread(target=self.run_test)
         t1.start()
         t2.start()
+        t3.start()
         t1.join()
         t2.join()
+        t3.join()
 
 
 if __name__ == '__main__':
