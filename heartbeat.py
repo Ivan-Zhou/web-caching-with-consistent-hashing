@@ -7,6 +7,7 @@ HEART_BEAT_INTERVAL = 1
 
 def send_heartbeat():
     master_address = get_master_address()
+    alerted = False
     while True:
         try:
             serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -15,7 +16,12 @@ def send_heartbeat():
             sleep(HEART_BEAT_INTERVAL)
             serverSocket.close()
         except Exception as e:
-            print(f"Error occured on send_heartbeat: {e}")
+            if not alerted:
+                print(f"Error occured on sending heartbeat to {master_address} due to error: {e}")
+            alerted = True
+        else:
+            # to avoid repeatedly sending alerts
+            alerted = False
 
 
 if __name__ == '__main__':

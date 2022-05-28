@@ -39,8 +39,8 @@ class Proxy:
         else:
             requestInfo = parse_request_info(clientAddr, clientData)
 
-            # print("incoming request:\n", clientData)
-            # print("parsed request info:\n", requestInfo)
+            print("incoming request:\n", clientData)
+            print("parsed request info:\n", requestInfo)
 
 
             if requestInfo["method"] == "GET":
@@ -53,8 +53,8 @@ class Proxy:
                     socketToCache.connect((cacheIP, cachePort))
                     # send all of clientData to cache server
                     # only needs one send, not a chunked send
-                   
-                   
+
+
                     socketToCache.send(clientData.encode())
 
                     # socketToCache.send(requestInfo["client_data"])
@@ -74,7 +74,7 @@ class Proxy:
                     return
                 except Exception as e:
                     print(f"Fail to connect to cache server: {e}")
-            
+
             else:
                 # if POST (or other), do the process of sending request to origin
                 print(f"Sending request to origin server {requestInfo['server_url']}")
@@ -95,7 +95,7 @@ class Proxy:
                 print("finished sending reply to client for non-GET request")
 
                 socketToOrigin.close()
-                
+
         clientSocket.close()
 
 
