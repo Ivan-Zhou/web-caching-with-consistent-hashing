@@ -3,5 +3,5 @@
         "host": "54.193.94.215",
         "port": 8888
     },
-    "cachePort": 12345
+    "cachePort": 8888
 }
