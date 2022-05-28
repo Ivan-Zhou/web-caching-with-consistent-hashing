@@ -1,7 +1,7 @@
 import requests
 import threading
 from utils import get_master_address
-from datetime import datetime
+from time import time
 import pandas as pd
 from test.utils import get_test_urls
 
@@ -30,11 +30,11 @@ def get_request(url):
 
 if __name__ == '__main__':
 	# threads = []
-	t_start = datetime.now()
+	t_start = time()
 	test_urls = get_test_urls(n=3)
 	for url in test_urls:
 		# Each thread handling one request
 		get_request(url)
-	t_end = datetime.now()
+	t_end = time()
 	t_execute = t_end - t_start
-	print("Finish all requests, t = {}".format(t_execute))
+	print(f"Finish all {len(test_urls)} requests in {t_execute} seconds")
