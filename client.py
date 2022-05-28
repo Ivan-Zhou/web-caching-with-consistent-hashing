@@ -15,7 +15,7 @@ TEST_URLS = [
 def get_test_data(n):
 	df = pd.read_csv("test/test_data.csv")
 	df = df[:n]
-	return df["raw"].tolist()
+	return df["url"].tolist()
 
 
 def get_request(url):
@@ -38,7 +38,6 @@ if __name__ == '__main__':
 	t_start = datetime.now()
 	test_urls = get_test_data(n=3)
 	for url in test_urls:
-		url = url.replace("https", "http")
 		# Each thread handling one request
 		get_request(url)
 	t_end = datetime.now()
