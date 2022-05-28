@@ -3,6 +3,7 @@ import threading
 from utils import get_master_address
 from datetime import datetime
 import pandas as pd
+from test.utils import get_test_urls
 
 
 TEST_URLS = [
@@ -10,12 +11,6 @@ TEST_URLS = [
     "http://www.washington.edu",
 	"http://www.go.com",
 ]
-
-
-def get_test_data(n):
-	df = pd.read_csv("test/test_data.csv")
-	df = df[:n]
-	return df["url"].tolist()
 
 
 def get_request(url):
@@ -36,7 +31,7 @@ def get_request(url):
 if __name__ == '__main__':
 	# threads = []
 	t_start = datetime.now()
-	test_urls = get_test_data(n=3)
+	test_urls = get_test_urls(n=3)
 	for url in test_urls:
 		# Each thread handling one request
 		get_request(url)
