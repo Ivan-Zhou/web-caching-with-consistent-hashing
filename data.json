@@ -1,6 +1,6 @@
 {
     "master": {
-        "host": "myth59.stanford.edu",
+        "host": "54.193.94.215",
         "port": 8888
     },
     "cachePort": 12345
