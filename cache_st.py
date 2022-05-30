@@ -54,13 +54,13 @@ class Cache():
 
             chunkedData = []
             while len(reply):
-                decoded = str(reply, encoding='utf-8', errors='ignore')
+                decoded = str(reply, encoding='utf-8')
                 print(decoded)
                 masterSocket.send(reply)
                 print("FetchFromOrigin sent a chunk to master")
                 chunkedData.append(reply)
-                if (decoded[-4:] == "\r\n\r\n"):
-                    break
+                # if (decoded[-4:] == "\r\n\r\n"):
+                #     break
                 reply = socketToOrigin.recv(RECV_SIZE)
 
             self.cacheDict[requestInfo["total_url"]]["data"] = chunkedData
