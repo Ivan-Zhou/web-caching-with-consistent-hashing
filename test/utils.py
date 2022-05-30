@@ -2,7 +2,7 @@ import pandas as pd
 from PIL import Image
 from io import BytesIO
 import json
-ADDRESS_DATA_FILE = "../data.json"
+DATA_FILE = "../data.json"
 
 
     
@@ -19,14 +19,14 @@ def load_image_content(content):
 def save_image(image, out_path="image.jpg"):
 	image.save(out_path, 'JPEG')
 
-def get_address_data():
-    with open(ADDRESS_DATA_FILE, "r") as f:
+def load_data():
+    with open(DATA_FILE, "r") as f:
         return json.load(f)
 
 def get_webserver_address():
-    address_data = get_address_data()
-    return address_data["webserver"]
+    data = load_data()
+    return data["webserver"]
 
 def get_section_num():
-    address_data = get_address_data()
-    return address_data["section_num"]
+    data = load_data()
+    return data["section_num"]
