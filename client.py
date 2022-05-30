@@ -23,6 +23,7 @@ def get_request(url):
 	try:
 		response = requests.get(url, proxies=proxies)
 		print("Get response {} for url {}".format(response.status_code, url))
+		return response
 	except Exception as e:
 		print(f"Fail to get response from proxy due to {e}")
 
@@ -31,10 +32,12 @@ def get_request(url):
 if __name__ == '__main__':
 	# threads = []
 	t_start = time()
+	my_test_urls = ["http://myth58.stanford.edu:6161/1000"]
 	test_urls = get_test_urls(n=3)
-	for url in test_urls:
+	for url in my_test_urls:
 		# Each thread handling one request
-		get_request(url)
+		res = get_request(url)
+		print(res.content)
 	t_end = time()
 	t_execute = t_end - t_start
 	print(f"Finish all {len(test_urls)} requests in {t_execute} seconds")
