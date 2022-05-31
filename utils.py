@@ -2,7 +2,7 @@ import json
 
 ADDRESS_DATA_FILE = "data.json"
 MAX_CONN = 1
-RECV_SIZE = 4096
+RECV_SIZE = 1024
 
 def get_address_data():
     with open(ADDRESS_DATA_FILE, "r") as f:

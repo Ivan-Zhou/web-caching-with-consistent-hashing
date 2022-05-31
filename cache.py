@@ -48,45 +48,53 @@ class Cache():
             socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
             socketToOrigin.send(requestInfo["client_data"])
-            print("receiving reply from origin server")
+
+
 
             # get reply for server socket (origin server)
             reply = socketToOrigin.recv(RECV_SIZE)
-            print("sending reply from cache to master server")
+            print("FetchFromOrigin sending reply from cache to master server")
 
             # acquire high level SWMR lock as writer
             self.cacheDictLock.acquire_write()
-            print ("after coarse grain acquire write")
+            print ("etchFromOrigin after coarse grain acquire write")
             self.cacheDict[requestInfo["total_url"]] = {
                 "data": [],
                 "timestamp": datetime.now(),
                 "lock": ReadWriteLock()
             }
             self.cacheDict[requestInfo["total_url"]]["lock"].acquire_write()
-            print("after fine grain acquire write")
+            print("FetchFromOrigin after fine grain acquire write")
             # release high level SWMR lock as writer
             self.cacheDictLock.release_write()
-            print("after coarse grain release write")
+            print("FetchFromOrigin after coarse grain release write")
 
             # acquire coarse grain lock as reader, fine grain as writer
             self.cacheDictLock.acquire_read()
-            print("after coarse grain acquire read")
+            print("FetchFromOrigin after coarse grain acquire read")
 
+            print("FetchFromOrigin start constructing chuncked data")
             chunkedData = []
+            
             while len(reply):
                 masterSocket.send(reply)
+                print("FetchFromOrigin sending a chunk to master")
                 chunkedData.append(reply)
                 reply = socketToOrigin.recv(RECV_SIZE)
 
             self.cacheDict[requestInfo["total_url"]]["data"] = chunkedData
+            for chunk in chunkedData:
+                print(str(chunk, encoding='utf-8', errors='ignore'))
 
             masterSocket.send(str.encode("\r\n\r\n"))
-            print("finished sending reply to master server")
+            print("FetchFromOrigin finished sending reply to master server")
 
             # release fine grain lock as writer, coarse grain as reader
             self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
             self.cacheDictLock.release_read()
             socketToOrigin.close()
+
+            print("FetchFromOrigin finished")
 
         except Exception as e:
             masterSocket.close()
@@ -110,8 +118,8 @@ class Cache():
             self.socketToMaster.close()
 
         print("socket creation done in server_init")
-        
-        
+
+
 
 
     def server_run(self):
@@ -119,7 +127,7 @@ class Cache():
         while True:
             try:
                 masterSocket, masterAddr = self.socketToMaster.accept()
-                print("received connection from master")
+                print("Received connection from master")
                 masterData = masterSocket.recv(RECV_SIZE)
                 t = threading.Thread(
                     target=self.request_handler_mem,
@@ -148,6 +156,7 @@ class Cache():
         Keep key in dict for efficiency and ease of concurrency implementation.
         '''
         # acquire coarse grain lock as a reader
+        print("Start flushing cache")
         print("attempt to acquire coarse grain read lock in flush")
         self.cacheDictLock.acquire_read()
         print("acquired coarse grain read lock in flush")
@@ -165,17 +174,18 @@ class Cache():
         print("release coarse grain read lock in flush")
 
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
-
+        # print("Request handler master data: \n", masterData)
         requestInfo = parse_request_info(masterAddr, masterData)
+        # print("Request info: \n", requestInfo)
         cacheKey = requestInfo["total_url"]
-
-        # print("master data: \n", masterData)
+        
+        
         # print("begin request handler")
 
         # acquire coarse grain lock as a reader
         self.cacheDictLock.acquire_read()
 
-        print("request handler acquire initial read lock")
+        # print("request handler acquire initial read lock")
 
         if cacheKey in self.cacheDict:
             chunks = None
@@ -195,6 +205,7 @@ class Cache():
                 print("cache hits for {}".format(requestInfo["total_url"]))
                 for chunk in chunks:
                     masterSocket.send(chunk)
+                    print("CacheHit sending data to master")
                 masterSocket.send(str.encode("\r\n\r\n"))
 
                 print("finished servicing cache hit")

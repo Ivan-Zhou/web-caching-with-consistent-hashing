@@ -5,14 +5,14 @@ import threading
 
 import socket
 from utils import get_master_address, get_cache_port, parse_request_info, MAX_CONN, RECV_SIZE
-from app import HashRing, singleHashTable, FLUSH_INTERVAL
+from app import HashRing, FLUSH_INTERVAL
 from heartbeat import HEART_BEAT_INTERVAL
 
 # socketToClient talks to browsers
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self, useConsistentCaching = True):
+    def __init__(self):
         try:
 
             # Create a TCP socket
@@ -28,12 +28,6 @@ class Proxy:
             self.socketToClient.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
             self.threads = []
-
-            # Single hashtable used as baseline for comparison with consistent caching
-            self.singleHashTable = None
-            if useConsistentCaching is False:
-                self.singleHashTable = singleHashTable()
-
         except Exception as e:
             print(f"Error occured on Proxy init: {e}")
             exit()
@@ -53,7 +47,7 @@ class Proxy:
                 # create server socket (socket to talk to origin server)
                 socketToCache = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
-                    cacheIP = self.get_node_name_for_key(requestInfo["total_url"])
+                    cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
                     cachePort = get_cache_port()
 
                     socketToCache.connect((cacheIP, cachePort))
@@ -138,7 +132,7 @@ class Proxy:
         # use the Host Address as the nodename
         self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
 
-    def get_node_name_for_key(self, key):
+    def get_node_name_for_hashkey(self, hash_key):
         """
           Get the nodename for a hash key.
           Parameters
@@ -148,11 +142,7 @@ class Proxy:
           ----------
           node_name : str
         """
-        node_name = None
-        if self.singleHashTable is None:
-            node_name = self.hash_ring.get_node(key)
-        else:
-            node_name = self.singleHashTable.get_node(key)
+        node_name = self.hash_ring.get_node(hash_key)
         return node_name
 
     def _flush(self):
@@ -160,10 +150,7 @@ class Proxy:
           Remove inactive nodes. Called every self.flush_interval
           milliseconds.
         """
-        if self.singleHashTable is None:
-            self.hash_ring.flush()
-        else:
-            self.singleHashTable.flush()
+        self.hash_ring.flush()
 
     def run(self):
         """
