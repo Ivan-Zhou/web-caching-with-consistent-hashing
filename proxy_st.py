@@ -5,14 +5,14 @@ import threading
 
 import socket
 from utils import get_master_address, get_cache_port, parse_request_info, MAX_CONN, RECV_SIZE
-from app import HashRing, FLUSH_INTERVAL
+from app import HashRing, FLUSH_INTERVAL, singleHashTable
 from heartbeat import HEART_BEAT_INTERVAL
 
 # socketToClient talks to browsers
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self):
+    def __init__(self, useConsistentCaching = True):
         try:
 
             # Create a TCP socket
@@ -28,6 +28,12 @@ class Proxy:
             self.socketToClient.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
             self.threads = []
+            
+            # Single hashtable used as baseline for comparison with consistent caching
+             self.singleHashTable = None
+             if useConsistentCaching is False:
+                 self.singleHashTable = singleHashTable()
+
         except Exception as e:
             print(f"Error occured on Proxy init: {e}")
             exit()
@@ -39,30 +45,26 @@ class Proxy:
         else:
             requestInfo = parse_request_info(clientAddr, clientData)
 
-            print("incoming request:\n", clientData)
-            print("parsed request info:\n", requestInfo)
+            # print("incoming request:\n", clientData)
+            # print("parsed request info:\n", requestInfo)
 
 
             if requestInfo["method"] == "GET":
                 # create server socket (socket to talk to origin server)
                 socketToCache = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
-                    cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
+                    # cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
+                    cacheIP = self.get_node_name_for_key(requestInfo["total_url"])
                     cachePort = get_cache_port()
 
                     socketToCache.connect((cacheIP, cachePort))
-                    # send all of clientData to cache server
-                    # only needs one send, not a chunked send
-
-
                     socketToCache.send(clientData.encode())
 
                     # socketToCache.send(requestInfo["client_data"])
-                    print("receiving reply from cache server")
-
+                    print("Receive reply from cache server")
                     # get reply for cache
                     reply = socketToCache.recv(RECV_SIZE)
-                    print("sending reply from cache to client")
+                    print("Send reply from cache to client")
 
                     # For the reply from the cache, need to do in a while loop
                     # because response can be big
@@ -70,7 +72,7 @@ class Proxy:
                         clientSocket.send(reply)
                         reply = socketToCache.recv(RECV_SIZE)
                     clientSocket.send(str.encode("\r\n\r\n"))
-                    print("finished sending reply to client for GET request")
+                    print("Finished sending reply to client for GET request")
                     return
                 except Exception as e:
                     print(f"Fail to connect to cache server: {e}")
@@ -92,7 +94,7 @@ class Proxy:
                     clientSocket.send(reply)
                     reply = socketToOrigin.recv(RECV_SIZE)
                 clientSocket.send(str.encode("\r\n\r\n"))
-                print("finished sending reply to client for non-GET request")
+                print("Finished sending reply to client for non-GET request")
 
                 socketToOrigin.close()
 
@@ -105,13 +107,6 @@ class Proxy:
                 # clientSocket is the socket on client side
                 clientSocket, clientAddr = self.socketToClient.accept()
                 clientData = clientSocket.recv(RECV_SIZE)
-
-                # is this a good idea? 2 threads might contact the same
-                # cache for the same data at once
-
-                # maybe, shouldn't be multi-threaded
-                # we can multi thread to different caches,
-                # but for a given cache should be serial
                 self.request_handler(clientSocket, clientAddr,
                             str(clientData, encoding='utf-8', errors='ignore'))
                
@@ -127,25 +122,25 @@ class Proxy:
         # use the Host Address as the nodename
         self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
 
-    def get_node_name_for_hashkey(self, hash_key):
-        """
-          Get the nodename for a hash key.
-          Parameters
-          ----------
-          hash_key : str
-          Return
-          ----------
-          node_name : str
-        """
-        node_name = self.hash_ring.get_node(hash_key)
-        return node_name
+    def get_node_name_for_key(self, key):
+      
+        node_name = None
+         if self.singleHashTable is None:
+             node_name = self.hash_ring.get_node(key)
+         else:
+             node_name = self.singleHashTable.get_node(key)
+         return node_name
 
     def _flush(self):
-        """
-          Remove inactive nodes. Called every self.flush_interval
-          milliseconds.
-        """
-        self.hash_ring.flush()
+         """
+           Remove inactive nodes. Called every self.flush_interval
+           milliseconds.
+         """
+         self.hash_ring.flush()
+         if self.singleHashTable is None:
+             self.hash_ring.flush()
+         else:
+             self.singleHashTable.flush()
 
     def run(self):
         """

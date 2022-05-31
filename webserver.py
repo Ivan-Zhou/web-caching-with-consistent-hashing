@@ -2,11 +2,10 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import time
 import os
+from utils import get_webserver_address, get_filename, get_section_size
 
-hostName = "myth58.stanford.edu"
-serverPort = 6161
-SECTION_SIZE = 10240 # 10 KB
-filename = "book.txt"
+
+# SECTION_SIZE = 10240 # 10 KB
 
 class MyServer(BaseHTTPRequestHandler):        
 
@@ -19,8 +18,11 @@ class MyServer(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<p>Request path: %s</p>" % self.path, "utf-8"))
         self.wfile.write(bytes("<body>", "utf-8"))
 
+        SECTION_SIZE = get_section_size()
         number = int(self.path[1:])
         start = SECTION_SIZE * number
+        filename = get_filename()
+        
 
         # check to make sure start < length of file
         if start < os.path.getsize(filename):
@@ -38,7 +40,10 @@ class MyServer(BaseHTTPRequestHandler):
 
 
 
-if __name__ == "__main__":        
+if __name__ == "__main__":     
+    webserver_address = get_webserver_address()
+    hostName = webserver_address['host']
+    serverPort = webserver_address['port']  
     webServer = HTTPServer((hostName, serverPort), MyServer)
     print("Server started http://%s:%s" % (hostName, serverPort))
 

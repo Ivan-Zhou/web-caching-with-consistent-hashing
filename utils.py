@@ -1,21 +1,37 @@
 import json
 
-ADDRESS_DATA_FILE = "data.json"
+DATA_FILE = "data.json"
 MAX_CONN = 1
 RECV_SIZE = 1024
 
-def get_address_data():
-    with open(ADDRESS_DATA_FILE, "r") as f:
+def load_data():
+    with open(DATA_FILE, "r") as f:
         return json.load(f)
 
-
 def get_master_address():
-    address_data = get_address_data()
-    return address_data["master"]
+    data =load_data()
+    return data["master"]
 
 def get_cache_port():
-    address_data = get_address_data()
-    return address_data["cachePort"]
+    data = load_data()
+    return data["cachePort"]
+
+def get_webserver_address():
+    data = load_data()
+    return data["webserver"]
+
+def get_section_num():
+    data = load_data()
+    return data["section_num"]
+
+def get_filename():
+    data = load_data()
+    return data["filename"]
+
+def get_section_size():
+    data = load_data()
+    return data["section_size"]
+
 
 '''
 This function processes the client data and separates out the essential information

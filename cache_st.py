@@ -46,7 +46,7 @@ class Cache():
             reply = socketToOrigin.recv(RECV_SIZE)
             print("FetchFromOrigin sending reply from cache to master server")
 
-            print ("FetchFromOrigin after coarse grain acquire write")
+ 
             self.cacheDict[requestInfo["total_url"]] = {
                 "data": [],
                 "timestamp": datetime.now()
@@ -55,24 +55,22 @@ class Cache():
             chunkedData = []
             while len(reply):
                 decoded = str(reply, encoding='utf-8')
-                print(decoded)
+                # print(decoded)
                 masterSocket.send(reply)
-                print("FetchFromOrigin sent a chunk to master")
+                # print("FetchFromOrigin sent a chunk to master")
                 chunkedData.append(reply)
                 # if (decoded[-4:] == "\r\n\r\n"):
                 #     break
                 reply = socketToOrigin.recv(RECV_SIZE)
 
             self.cacheDict[requestInfo["total_url"]]["data"] = chunkedData
-            for chunk in chunkedData:
-                print(str(chunk, encoding='utf-8', errors='ignore'))
+            # for chunk in chunkedData:
+            #     print(str(chunk, encoding='utf-8', errors='ignore'))
 
             masterSocket.send(str.encode("\r\n\r\n"))
-            print("FetchFromOrigin finished sending reply to master server")
-
             socketToOrigin.close()
 
-            print("FetchFromOrigin finished")
+            print("FetchFromOrigin finished sending reply to master server")
 
         except Exception as e:
             masterSocket.close()
@@ -145,15 +143,15 @@ class Cache():
 
             # send in chunks to master server
             if found:
-                print("cache hits for {}".format(requestInfo["total_url"]))
+                print("CACHE HITS for {}".format(requestInfo["total_url"]))
                 for chunk in chunks:
                     masterSocket.send(chunk)
-                    print("CacheHit sending data to master")
+                    # print("CacheHit sending data to master")
                 masterSocket.send(str.encode("\r\n\r\n"))
 
-                print("finished servicing cache hit")
+                print("Finished servicing cache hit")
             else:
-                print("fetch from origin to get {}".format(requestInfo["total_url"]))
+                print("Fetch from origin to get {}".format(requestInfo["total_url"]))
                 self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
 
         else:
