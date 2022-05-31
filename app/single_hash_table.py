@@ -1,19 +1,25 @@
 from .hash_utils import FLUSH_INTERVAL, md5_hash
+import time
 
 class singleHashTable:
     def __init__(self, hash_fn=md5_hash):
         self.hash_fn = hash_fn
-        self.nodes = []
+        self.nodes = {}
 
     def get_node(self, key):
-        return self.nodes[self.get_node_idx(key) % len(self.nodes)]
+        if not self.nodes:
+            return None
+        return list(self.nodes.values())[self.get_node_idx(key) % len(self.nodes)]
 
     def add_node(self, node):
-        self.nodes.append(node)
+        if node["nodename"] not in self.nodes:
+            self.nodes[node["nodename"]] = node
 
     def remove_node(self, nodename):
-        # Note this does not check if nodename is in self.nodes!
-        self.nodes.pop(self.get_node_idx(nodename))
+        if not self.nodes:
+            return
+        if nodename in self.nodes:
+            self.nodes.pop(nodename, None)
 
     def flush(self, time_stamp):
         for node_meta in self.nodes:
@@ -35,20 +41,11 @@ class singleHashTable:
         node_name : str
             name identifying the node.
         """
-        # TODO: should we change to python dict for implementation? How does it affect the performance.
-        for node_meta in self.nodes:
-            if node_meta["nodename"] == "node_name":
-                node_name["lastHeartbeat"] = time.time()
-
-        # node_meta = self.cons_hash.get_node_meta(node_name)
-        # if node_meta is not None:
-        #     node_meta["lastHeartbeat"] = time.time()
-        # else:
-        #     # Add new node to consistent caching
-        #     print(f"Add a new node to consistent caching: {node_name}")
-        #     self.add_node(node_name)
+        if node_name in self.nodes:
+            self.nodes[node_name]["lastHeartbeat"] = time.time()
 
     def flush(self, time_stamp):
-        for node_meta in self.nodes:
-            if node_meta["lastHeartbeat"] < time_stamp:
+        for nodename in self.nodes.copy():
+            node_meta = self.nodes[nodename]
+            if node_meta["lastHeartbeat"] is None or node_meta["lastHeartbeat"] < time_stamp:
                 self.remove_node(node_meta["nodename"])
