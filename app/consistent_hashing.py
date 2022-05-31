@@ -42,5 +42,5 @@ class ConsistentHashing:
     def flush(self, time_stamp):
         for key in self._nodes:
             node_meta = self._nodes[key]
-            if node_meta["lastHeartbeat"] < time_stamp:
+            if node_meta["lastHeartbeat"] is None or node_meta["lastHeartbeat"] < time_stamp:
                 self.remove_node(node_meta["nodename"])
