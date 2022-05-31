@@ -21,11 +21,6 @@ class singleHashTable:
         if nodename in self.nodes:
             self.nodes.pop(nodename, None)
 
-    def flush(self, time_stamp):
-        for node_meta in self.nodes:
-            if node_meta["lastHeartbeat"] < time_stamp:
-                self.remove_node(node_meta["nodename"])
-
     def get_node_idx(self, key):
         return self.hash_fn(key) % len(self.nodes)
 
