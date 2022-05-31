@@ -1,12 +1,5 @@
 from hashlib import md5
-
-
-def md5_hash(key):
-    """
-    Returns the md5 hash of the key.
-    """
-    return int(md5(str(key).encode("utf-8")).hexdigest(), 16)
-
+from .hash_utils import md5_hash
 
 class ConsistentHashing:
     def __init__(self, hash_fn=md5_hash):
@@ -48,6 +41,6 @@ class ConsistentHashing:
 
     def flush(self, time_stamp):
         for key in self._nodes:
-            node_meta = self._nodes[key]["lastHeartbeat"]
-            if node_meta < time_stamp:
+            node_meta = self._nodes[key]
+            if node_meta["lastHeartbeat"] < time_stamp:
                 self.remove_node(node_meta["nodename"])
