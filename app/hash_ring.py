@@ -2,9 +2,7 @@ from bisect import bisect
 import time
 
 from .consistent_hashing import ConsistentHashing
-
-FLUSH_INTERVAL = 10  # seconds
-
+from .hash_utils import FLUSH_INTERVAL
 
 class HashRing:
     def __init__(
