@@ -5,14 +5,14 @@ import threading
 
 import socket
 from utils import get_master_address, get_cache_port, parse_request_info, MAX_CONN, RECV_SIZE
-from app import HashRing, singleHashTable, FLUSH_INTERVAL
+from app import HashRing, FLUSH_INTERVAL
 from heartbeat import HEART_BEAT_INTERVAL
 
 # socketToClient talks to browsers
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self, useConsistentCaching = True):
+    def __init__(self):
         try:
 
             # Create a TCP socket
@@ -28,12 +28,6 @@ class Proxy:
             self.socketToClient.listen(MAX_CONN) # become a proxy socket
             self.hash_ring = HashRing()
             self.threads = []
-
-            # Single hashtable used as baseline for comparison with consistent caching
-            self.singleHashTable = None
-            if useConsistentCaching is False:
-                self.singleHashTable = singleHashTable()
-
         except Exception as e:
             print(f"Error occured on Proxy init: {e}")
             exit()
@@ -53,7 +47,7 @@ class Proxy:
                 # create server socket (socket to talk to origin server)
                 socketToCache = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 try:
-                    cacheIP = self.get_node_name_for_key(requestInfo["total_url"])
+                    cacheIP = self.get_node_name_for_hashkey(requestInfo["total_url"])
                     cachePort = get_cache_port()
 
                     socketToCache.connect((cacheIP, cachePort))
@@ -72,10 +66,16 @@ class Proxy:
 
                     # For the reply from the cache, need to do in a while loop
                     # because response can be big
+                    i=0
                     while len(reply):
                         clientSocket.send(reply)
+                        i = i+1
+                        # print("MASTER server get a chunk: /n", reply)
                         reply = socketToCache.recv(RECV_SIZE)
-                    clientSocket.send(str.encode("\r\n\r\n"))
+                        print("MASTER number of chunks got from cache: \n", i)
+                    
+                    clientSocket.send(b"\r\n\r\n")
+                    
                     print("finished sending reply to client for GET request")
                     return
                 except Exception as e:
@@ -97,7 +97,7 @@ class Proxy:
                 while len(reply):
                     clientSocket.send(reply)
                     reply = socketToOrigin.recv(RECV_SIZE)
-                clientSocket.send(str.encode("\r\n\r\n"))
+                clientSocket.send(b"\r\n\r\n")
                 print("finished sending reply to client for non-GET request")
 
                 socketToOrigin.close()
@@ -110,6 +110,7 @@ class Proxy:
             try:
                 # clientSocket is the socket on client side
                 clientSocket, clientAddr = self.socketToClient.accept()
+                
                 clientData = clientSocket.recv(RECV_SIZE)
 
                 # is this a good idea? 2 threads might contact the same
@@ -118,17 +119,18 @@ class Proxy:
                 # maybe, shouldn't be multi-threaded
                 # we can multi thread to different caches,
                 # but for a given cache should be serial
-                t = threading.Thread(
-                    target=self.request_handler,
-                    args=(clientSocket, clientAddr,
-                            str(clientData, encoding='utf-8', errors='ignore')))
-                self.threads.append(t)
-                t.start()
+                self.request_handler(clientSocket, clientAddr,str(clientData, encoding='utf-8', errors='ignore'))
+                # t = threading.Thread(
+                #     target=self.request_handler,
+                #     args=(clientSocket, clientAddr,
+                #             str(clientData, encoding='utf-8', errors='ignore')))
+                # self.threads.append(t)
+                # t.start()
 
             except KeyboardInterrupt:
                 # join all the threads
-                for t in self.threads:
-                    t.join()
+                # for t in self.threads:
+                #     t.join()
 
                 clientSocket.close()
                 self.socketToClient.close()
@@ -138,7 +140,7 @@ class Proxy:
         # use the Host Address as the nodename
         self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
 
-    def get_node_name_for_key(self, key):
+    def get_node_name_for_hashkey(self, hash_key):
         """
           Get the nodename for a hash key.
           Parameters
@@ -148,11 +150,7 @@ class Proxy:
           ----------
           node_name : str
         """
-        node_name = None
-        if self.singleHashTable is None:
-            node_name = self.hash_ring.get_node(key)
-        else:
-            node_name = self.singleHashTable.get_node(key)
+        node_name = self.hash_ring.get_node(hash_key)
         return node_name
 
     def _flush(self):
@@ -160,10 +158,7 @@ class Proxy:
           Remove inactive nodes. Called every self.flush_interval
           milliseconds.
         """
-        if self.singleHashTable is None:
-            self.hash_ring.flush()
-        else:
-            self.singleHashTable.flush()
+        self.hash_ring.flush()
 
     def run(self):
         """

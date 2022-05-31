@@ -1,40 +1,43 @@
 import requests
 import threading
 from utils import get_master_address
-from datetime import datetime
+from time import time
+import pandas as pd
+from test.utils import get_test_urls
+
+
 TEST_URLS = [
+	"http://web.stanford.edu/class/cs110",
     "http://www.washington.edu",
 	"http://www.go.com",
-	"http://web.stanford.edu/class/cs110"
-	
 ]
+
 
 def get_request(url):
 	master_address = get_master_address()
+
 	print("proxy running on host: {}, port: {}".format(master_address["host"], master_address["port"]))
 	proxies = {
-		'http': f'http://{master_address["host"]}:{master_address["port"]}',
+		'http': f'{master_address["host"]}:{master_address["port"]}',
 	}
-	response = requests.get(url, proxies=proxies)
-	print("Get response {} for url {}".format(response.status_code, url))
-	# print(response.text)
+	try:
+		response = requests.get(url, proxies=proxies)
+		print("Get response {} for url {}".format(response.status_code, url))
+		return response
+	except Exception as e:
+		print(f"Fail to get response from proxy due to {e}")
 
 
 
 if __name__ == '__main__':
-	threads = []
-	t_start = datetime.now()
-	for url in TEST_URLS:
+	# threads = []
+	t_start = time()
+	my_test_urls = ["http://myth58.stanford.edu:6161/1000"]
+	test_urls = get_test_urls(n=3)
+	for url in my_test_urls:
 		# Each thread handling one request
-		t = threading.Thread(target = get_request(url))
-		t.start()
-		threads.append(t)	
-	for t in threads:
-		t.join()
-	t_end = datetime.now()
+		res = get_request(url)
+		print(res.content)
+	t_end = time()
 	t_execute = t_end - t_start
-	print("Finish all requests, t = {}".format(t_execute))
-       
-	
-
-
+	print(f"Finish all {len(test_urls)} requests in {t_execute} seconds")
