@@ -49,7 +49,7 @@ class HashRing:
             node_meta["lastHeartbeat"] = time.time()
         else:
             # Add new node to consistent caching
-            print(f"Add a new node to consistent caching: {node_name}")
+            print(f"Add a new node: {node_name}")
             self.add_node(node_name)
 
     def flush(self):

@@ -14,7 +14,7 @@ def send_heartbeat():
             serverSocket.connect((master_address["host"], master_address["port"]))
             serverSocket.send("heartbeat".encode())
             sleep(HEART_BEAT_INTERVAL)
-            serverSocket.close()
+            # serverSocket.close()
         except Exception as e:
             if not alerted:
                 print(f"Error occured on sending heartbeat to {master_address} due to error: {e}")

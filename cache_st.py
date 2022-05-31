@@ -6,6 +6,7 @@ from utils import parse_request_info, get_cache_port, MAX_CONN, RECV_SIZE
 from heartbeat import send_heartbeat, HEART_BEAT_INTERVAL
 # CACHE_DIR = "./cache"
 from requests import get
+from collections import defaultdict
 
 # how often to go through dict and flush expired
 CACHE_FLUSH_INTERVAL = 3600 # 1 hour
@@ -19,6 +20,7 @@ class Cache():
         self.threads = []
         self.cacheDict = {
         }
+        self.counter = defaultdict(int)
 
         #
         # {
@@ -129,6 +131,7 @@ class Cache():
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
         # print("Request handler master data: \n", masterData)
         requestInfo = parse_request_info(masterAddr, masterData)
+        self.counter["requests"] += 1
         # print("Request info: \n", requestInfo)
         cacheKey = requestInfo["total_url"]
         
@@ -140,10 +143,11 @@ class Cache():
             if not self.ifExpired(cacheKey):
                 found = True
                 chunks = self.cacheDict[cacheKey]["data"].copy()
-
+            
             # send in chunks to master server
             if found:
                 print("CACHE HITS for {}".format(requestInfo["total_url"]))
+                self.counter["hits"] += 1
                 for chunk in chunks:
                     masterSocket.send(chunk)
                     # print("CacheHit sending data to master")
@@ -151,14 +155,25 @@ class Cache():
 
                 print("Finished servicing cache hit")
             else:
+                self.counter["misses"] += 1
                 print("Fetch from origin to get {}".format(requestInfo["total_url"]))
                 self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
 
         else:
+            self.counter["misses"] += 1
             print("NOT in cache dict")
             self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
-
+       
+        self.summary()
         masterSocket.close()
+
+    def summary(self):
+        print(f"Summary of counter:")
+        print(f"Count of cache miss: {self.counter['misses']}")
+        print(f"Count of requests: {self.counter['requests']}")
+        print(f"Count of cache hits: {self.counter['hits']}")
+        # for key, val in self.counter.items():
+        #     print(f"count of {key}: {val}")
 
     def run(self):
         """

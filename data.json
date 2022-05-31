@@ -8,7 +8,7 @@
         "host": "myth58.stanford.edu",
         "port": 6161
     },
-    "section_num": 10,
+    "section_num": 100,
     "filename": "book.txt",
     "section_size": 10240
 }
