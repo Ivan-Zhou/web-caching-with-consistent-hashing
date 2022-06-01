@@ -1,6 +1,6 @@
 {
     "master": {
-        "host": "myth62.stanford.edu",
+        "host": "myth57.stanford.edu",
         "port": 8888
     },
     "cachePort": 8888,
@@ -8,7 +8,7 @@
         "host": "myth58.stanford.edu",
         "port": 6161
     },
-    "section_num": 100,
+    "section_num": 500,
     "filename": "book.txt",
-    "section_size": 10240
+    "section_size": 1024
 }

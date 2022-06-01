@@ -13,7 +13,7 @@ from heartbeat import HEART_BEAT_INTERVAL
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self, useConsistentCaching = False):
+    def __init__(self, useConsistentCaching = True):
         try:
             # Create a TCP socket
             self.socketToClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -125,7 +125,7 @@ class Proxy:
 
 
     def get_node_name_for_key(self, key):
-      
+    #   key is total_url
         node_name = None
         if self.singleHashTable is None:
             node_name = self.hash_ring.get_node(key)
@@ -141,7 +141,7 @@ class Proxy:
         if self.singleHashTable is None:
             self.hash_ring.flush()
         else:
-            self.singleHashTable.flush_cache()
+            self.singleHashTable.flush()
            
 
     def run(self):

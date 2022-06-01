@@ -13,6 +13,7 @@ def send_heartbeat():
             serverSocket = socket(AF_INET, SOCK_STREAM)
             serverSocket.connect((master_address["host"], master_address["port"]))
             serverSocket.send("heartbeat".encode())
+            # print("sending heartbeat")
             sleep(HEART_BEAT_INTERVAL)
             # serverSocket.close()
         except Exception as e:

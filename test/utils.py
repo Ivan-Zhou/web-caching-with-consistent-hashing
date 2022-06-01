@@ -3,10 +3,6 @@ from PIL import Image
 from io import BytesIO
 import json
 DATA_FILE = "../data.json"
-<<<<<<< HEAD
-=======
-
->>>>>>> a14098c0fb6dcfdad8b1d1ffa81e0ffc5154eb24
 
     
 
