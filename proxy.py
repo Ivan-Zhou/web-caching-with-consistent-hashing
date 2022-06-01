@@ -134,9 +134,13 @@ class Proxy:
                 self.socketToClient.close()
                 break
 
+
     def _handle_heartbeat(self, clientAddr):
-        # use the Host Address as the nodename
-        self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
+        if self.singleHashTable is None:
+            # use the Host Address as the nodename
+            self.hash_ring.handle_heartbeat(node_name=clientAddr[0])
+        else:
+            self.singleHashTable.handle_heartbeat(node_name=clientAddr[0])
 
     def get_node_name_for_key(self, key):
         """
