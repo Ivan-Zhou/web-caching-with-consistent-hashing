@@ -14,7 +14,10 @@ def get_test_urls(n):
 def load_image_content(content):
 	return Image.open(BytesIO(content))
 
-
+def get_master_address():
+    data =load_data()
+    return data["master"]
+    
 def save_image(image, out_path="image.jpg"):
 	image.save(out_path, 'JPEG')
 
