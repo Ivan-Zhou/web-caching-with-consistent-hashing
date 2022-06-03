@@ -21,6 +21,7 @@ class Cache():
         self.cacheDict = {
         }
         self.cacheDictLock = ReadWriteLock()
+        self.counter = defaultdict(int)
 
         #
         # {
@@ -57,7 +58,7 @@ class Cache():
 
             # acquire high level SWMR lock as writer
             self.cacheDictLock.acquire_write()
-            print ("etchFromOrigin after coarse grain acquire write")
+            print ("FetchFromOrigin after coarse grain acquire write")
             self.cacheDict[requestInfo["total_url"]] = {
                 "data": [],
                 "timestamp": datetime.now(),
@@ -73,21 +74,21 @@ class Cache():
             self.cacheDictLock.acquire_read()
             print("FetchFromOrigin after coarse grain acquire read")
 
-            print("FetchFromOrigin start constructing chuncked data")
+            # print("FetchFromOrigin start constructing chuncked data")
             chunkedData = []
             
             while len(reply):
                 masterSocket.send(reply)
-                print("FetchFromOrigin sending a chunk to master")
+                # print("FetchFromOrigin sending a chunk to master")
                 chunkedData.append(reply)
                 reply = socketToOrigin.recv(RECV_SIZE)
 
             self.cacheDict[requestInfo["total_url"]]["data"] = chunkedData
-            for chunk in chunkedData:
-                print(str(chunk, encoding='utf-8', errors='ignore'))
+            # for chunk in chunkedData:
+            #     print(str(chunk, encoding='utf-8', errors='ignore'))
 
             masterSocket.send(str.encode("\r\n\r\n"))
-            print("FetchFromOrigin finished sending reply to master server")
+            # print("FetchFromOrigin finished sending reply to master server")
 
             # release fine grain lock as writer, coarse grain as reader
             self.cacheDict[requestInfo["total_url"]]["lock"].release_write()
@@ -117,7 +118,7 @@ class Cache():
             print(f"Error occured on Cache server init: {e}")
             self.socketToMaster.close()
 
-        print("socket creation done in server_init")
+        # print("socket creation done in server_init")
 
 
 
@@ -134,7 +135,7 @@ class Cache():
                     args=(masterSocket, masterAddr, str(masterData, encoding='utf-8', errors='ignore')))
                 self.threads.append(t)
                 t.start()
-                print("start processing connection from master")
+                # print("start processing connection from master")
 
             except KeyboardInterrupt:
                 # join threads
@@ -206,7 +207,7 @@ class Cache():
                 self.counter["hits"] += 1
                 for chunk in chunks:
                     masterSocket.send(chunk)
-                    print("CacheHit sending data to master")
+                    # print("CacheHit sending data to master")
                 masterSocket.send(str.encode("\r\n\r\n"))
 
                 print("finished servicing cache hit")

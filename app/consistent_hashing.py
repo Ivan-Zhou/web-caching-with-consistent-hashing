@@ -40,7 +40,8 @@ class ConsistentHashing:
         return self._nodes[node_name]
 
     def flush(self, time_stamp):
-        for key in self._nodes:
+        for key in self._nodes.copy():
             node_meta = self._nodes[key]
             if node_meta["lastHeartbeat"] is None or node_meta["lastHeartbeat"] < time_stamp:
+                print(f"remove node {node_meta['nodename']}")
                 self.remove_node(node_meta["nodename"])

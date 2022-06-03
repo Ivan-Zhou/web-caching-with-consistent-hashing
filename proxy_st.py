@@ -13,7 +13,7 @@ from heartbeat import HEART_BEAT_INTERVAL
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self, useConsistentCaching = True):
+    def __init__(self, useConsistentCaching = False):
         try:
             # Create a TCP socket
             self.socketToClient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,6 +41,7 @@ class Proxy:
             # print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             self._handle_heartbeat(clientAddr)
         else:
+            self._flush()
             requestInfo = parse_request_info(clientAddr, clientData)
 
             # print("incoming request:\n", clientData)
@@ -138,10 +139,12 @@ class Proxy:
            Remove inactive nodes. Called every self.flush_interval
            milliseconds.
         """
+        # while True:
         if self.singleHashTable is None:
             self.hash_ring.flush()
         else:
             self.singleHashTable.flush()
+        # time.sleep(FLUSH_INTERVAL)
            
 
     def run(self):
@@ -149,7 +152,7 @@ class Proxy:
         Run scheduled tasks in thread to maintain cache servers
         """
         t1 = threading.Thread(target=self.service_requests)
-        t2 = threading.Timer(FLUSH_INTERVAL, self._flush)
+        t2 = threading.Thread(target=self._flush)
         t1.start()
         t2.start()
         t1.join()

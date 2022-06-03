@@ -139,13 +139,9 @@ class Cache():
 
         if cacheKey in self.cacheDict:
             chunks = None
-            found = False
             if not self.ifExpired(cacheKey):
-                found = True
                 chunks = self.cacheDict[cacheKey]["data"].copy()
             
-            # send in chunks to master server
-            if found:
                 print("CACHE HITS for {}".format(requestInfo["total_url"]))
                 self.counter["hits"] += 1
                 for chunk in chunks:

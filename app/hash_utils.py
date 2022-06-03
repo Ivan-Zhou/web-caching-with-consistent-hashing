@@ -1,6 +1,6 @@
 from hashlib import md5
 
-FLUSH_INTERVAL = 10  # seconds
+FLUSH_INTERVAL = 3  # seconds
 
 def md5_hash(key):
     """

@@ -12,7 +12,7 @@ from heartbeat import HEART_BEAT_INTERVAL
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self, useConsistentCaching = True):
+    def __init__(self, useConsistentCaching = False):
         try:
 
             # Create a TCP socket
@@ -43,10 +43,11 @@ class Proxy:
             # print(f"Receive a heartbeat message from a Cache Server {clientAddr}")
             self._handle_heartbeat(clientAddr)
         else:
+            self._flush()
             requestInfo = parse_request_info(clientAddr, clientData)
 
-            print("incoming request:\n", clientData)
-            print("parsed request info:\n", requestInfo)
+            # print("incoming request:\n", clientData)
+            # print("parsed request info:\n", requestInfo)
 
 
             if requestInfo["method"] == "GET":
