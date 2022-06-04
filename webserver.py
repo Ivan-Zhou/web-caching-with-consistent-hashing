@@ -19,6 +19,7 @@ class MyServer(BaseHTTPRequestHandler):
         self.wfile.write(bytes("<body>", "utf-8"))
 
         SECTION_SIZE = get_section_size()
+        # time.sleep(2)
         number = int(self.path[1:])
         start = SECTION_SIZE * number
         filename = get_filename()

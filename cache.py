@@ -54,25 +54,25 @@ class Cache():
 
             # get reply for server socket (origin server)
             reply = socketToOrigin.recv(RECV_SIZE)
-            print("FetchFromOrigin sending reply from cache to master server")
+            print("Sending reply from cache to master server")
 
             # acquire high level SWMR lock as writer
             self.cacheDictLock.acquire_write()
-            print ("FetchFromOrigin after coarse grain acquire write")
+            # print ("After coarse grain acquire write")
             self.cacheDict[requestInfo["total_url"]] = {
                 "data": [],
                 "timestamp": datetime.now(),
                 "lock": ReadWriteLock()
             }
             self.cacheDict[requestInfo["total_url"]]["lock"].acquire_write()
-            print("FetchFromOrigin after fine grain acquire write")
+            # print("FetchFromOrigin after fine grain acquire write")
             # release high level SWMR lock as writer
             self.cacheDictLock.release_write()
-            print("FetchFromOrigin after coarse grain release write")
+            # print("FetchFromOrigin after coarse grain release write")
 
             # acquire coarse grain lock as reader, fine grain as writer
             self.cacheDictLock.acquire_read()
-            print("FetchFromOrigin after coarse grain acquire read")
+            # print("FetchFromOrigin after coarse grain acquire read")
 
             # print("FetchFromOrigin start constructing chuncked data")
             chunkedData = []
@@ -124,7 +124,7 @@ class Cache():
 
 
     def server_run(self):
-        print("start server run")
+        print("Start cache server")
         while True:
             try:
                 masterSocket, masterAddr = self.socketToMaster.accept()
@@ -158,9 +158,9 @@ class Cache():
         '''
         # acquire coarse grain lock as a reader
         print("Start flushing cache")
-        print("attempt to acquire coarse grain read lock in flush")
+        # print("attempt to acquire coarse grain read lock in flush")
         self.cacheDictLock.acquire_read()
-        print("acquired coarse grain read lock in flush")
+        # print("acquired coarse grain read lock in flush")
         for cacheKey in self.cacheDict:
             # acquire fine grain lock as writer
             self.cacheDict[cacheKey]["lock"].acquire_write()
@@ -172,7 +172,7 @@ class Cache():
 
         # release coarse grain lock as a reader
         self.cacheDictLock.release_read()
-        print("release coarse grain read lock in flush")
+        # print("release coarse grain read lock in flush")
 
     def request_handler_mem(self, masterSocket, masterAddr, masterData):
         # print("Request handler master data: \n", masterData)
@@ -203,24 +203,25 @@ class Cache():
 
             # send in chunks to master server
             if found:
-                print("cache hits for {}".format(requestInfo["total_url"]))
+                print("Cache hits for {}".format(requestInfo["total_url"]))
                 self.counter["hits"] += 1
                 for chunk in chunks:
                     masterSocket.send(chunk)
                     # print("CacheHit sending data to master")
                 masterSocket.send(str.encode("\r\n\r\n"))
 
-                print("finished servicing cache hit")
+                print("Finished servicing cache hit")
             else:
                 self.counter["misses"] += 1
-                print("fetch from origin to get {}".format(requestInfo["total_url"]))
+                print("Cache miss for {}".format(requestInfo["total_url"]))
+                
                 self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
 
         else:
             # release coarse grain lock as a reader
             self.counter["misses"] += 1
             self.cacheDictLock.release_read()
-            print("NOT in cache dict, release coarse lock")
+            print("Cache miss for {}".format(requestInfo["total_url"]))
             self.fetch_from_origin_mem(masterSocket, masterAddr, requestInfo)
 
         self.summary()

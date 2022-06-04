@@ -6,32 +6,15 @@ import pandas as pd
 from test.utils import get_test_urls
 from time import sleep
 REQUEST_SLEEP_INTERVAL = 0.5
-# from requests.adapters import HTTPAdapter
-# from requests.packages.urllib3.util.retry import Retry
-
-
-
-
-# TEST_URLS = [
-# 	"http://web.stanford.edu/class/cs110",
-#     "http://www.washington.edu",
-# 	"http://www.go.com",
-# ]
-
 
 def get_request(url):
 	master_address = get_master_address()
 
-	print("proxy running on host: {}, port: {}".format(master_address["host"], master_address["port"]))
+	print("Proxy running on host: {}, port: {}".format(master_address["host"], master_address["port"]))
 	proxies = {
 		'http': f'{master_address["host"]}:{master_address["port"]}',
 	}
 	try:
-		# session = requests.Session()
-		# retry = Retry(connect=3, backoff_factor=0.5)
-		# adapter = HTTPAdapter(max_retries=retry)
-		# session.mount('http://', adapter)
-		# response = session.get(url, proxies=proxies)
 		response = requests.get(url, proxies=proxies)
 		print("Get response {} for url {}".format(response.status_code, url))
 		return response

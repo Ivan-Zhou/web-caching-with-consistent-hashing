@@ -12,7 +12,7 @@ from heartbeat import HEART_BEAT_INTERVAL
 # socketToOrigin talks to origin
 
 class Proxy:
-    def __init__(self, useConsistentCaching = False):
+    def __init__(self, useConsistentCaching = True):
         try:
 
             # Create a TCP socket
@@ -65,11 +65,11 @@ class Proxy:
                     socketToCache.send(clientData.encode())
 
                     # socketToCache.send(requestInfo["client_data"])
-                    print("receiving reply from cache server")
+                    print("Receiving reply from cache server")
 
                     # get reply for cache
                     reply = socketToCache.recv(RECV_SIZE)
-                    print("sending reply from cache to client")
+                    print("Sending reply from cache to client")
 
                     # For the reply from the cache, need to do in a while loop
                     # because response can be big
@@ -77,7 +77,7 @@ class Proxy:
                         clientSocket.send(reply)
                         reply = socketToCache.recv(RECV_SIZE)
                     clientSocket.send(str.encode("\r\n\r\n"))
-                    print("finished sending reply to client for GET request")
+                    print("Finished sending reply to client for GET request")
                     return
                 except Exception as e:
                     print(f"Fail to connect to cache server: {e}")
@@ -90,16 +90,16 @@ class Proxy:
                 socketToOrigin = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 socketToOrigin.connect((requestInfo["server_url"], requestInfo["server_port"]))
                 socketToOrigin.send(requestInfo["client_data"])
-                print("receiving reply from origin server")
+                print("Receiving reply from origin server")
 
                 # get reply for server socket (origin server)
                 reply = socketToOrigin.recv(RECV_SIZE)
-                print("FETCH origin, sending reply to client")
+                # print("FETCH origin, sending reply to client")
                 while len(reply):
                     clientSocket.send(reply)
                     reply = socketToOrigin.recv(RECV_SIZE)
                 clientSocket.send(str.encode("\r\n\r\n"))
-                print("finished sending reply to client for non-GET request")
+                print("Finished sending reply to client")
 
                 socketToOrigin.close()
 

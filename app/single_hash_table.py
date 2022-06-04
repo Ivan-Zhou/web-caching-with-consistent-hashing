@@ -47,6 +47,6 @@ class singleHashTable:
                 self.remove_node(node_meta["nodename"])
     # public method called by proxy          
     def flush(self):
-        print(f"Flush the traditional hash ring at {time.ctime()}")
+        # print(f"Flush the traditional hash ring at {time.ctime()}")
         timestamp = time.time() - FLUSH_INTERVAL
         self.flush_(timestamp)

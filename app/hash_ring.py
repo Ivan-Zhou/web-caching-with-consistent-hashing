@@ -59,7 +59,7 @@ class HashRing:
         Parameters
         ----------
         """
-        print(f"Flush the hash ring at {time.ctime()}")
+        # print(f"Flush the hash ring at {time.ctime()}")
         self.cons_hash.flush(time.time() - self.flush_interval)
 
     def _get(self, key, item):
