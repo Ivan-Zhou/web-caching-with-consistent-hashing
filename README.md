@@ -20,3 +20,6 @@ Then run
 ```
 python3 cache.py
 ```
+
+Final design paper:
+https://www.scs.stanford.edu/22sp-cs244b/projects/Web%20Caching%20with%20Consistent%20Hashing.pdf
